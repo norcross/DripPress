@@ -47,7 +47,7 @@ function drip_control( $content ) {
 	}
 
 	// Compare our dates.
-	$drip_compare  = Utilities\compare_drip_dates( get_the_ID() );
+	$drip_compare   = Utilities\compare_drip_dates( get_the_ID() );
 
 	// If we have a false return (which means missing data) then just return the content.
 	if ( ! $drip_compare ) {

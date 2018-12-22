@@ -155,7 +155,7 @@ function save_drip_meta( $post_id, $post ) {
 	$drip_range = ! empty( $_POST['dppress-meta-range'] ) ? sanitize_text_field( $_POST['dppress-meta-range'] ) : '';
 
 	// Bail and purge if we didn't include any values.
-	if ( empty( $drip_count ) && empty( $drip_range ) ) {
+	if ( empty( $drip_count ) || empty( $drip_range ) ) {
 
 		// Set the drip sort time for sorting purposes
 		update_post_meta( $post_id, Core\META_PREFIX . 'sort', $set_timestamp );

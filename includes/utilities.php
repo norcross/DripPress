@@ -126,18 +126,13 @@ function get_user_signup_date( $user_id = 0 ) {
  * Compare the signup date to the drip schedule.
  *
  * @param  integer $post_id  The content ID we wanna check.
- * @param  integer $user_id  Who's trying to access it.
  *
  * @return mixed
  */
-function compare_drip_dates( $post_id = 0, $user_id = 0 ) {
+function compare_drip_dates( $post_id = 0 ) {
 
-	// Attempt to fetch the post ID and user ID if not passed.
-	$post_id    = ! empty( $post_id ) ? $post_id : get_the_ID();
-	$user_id    = ! empty( $user_id ) ? $user_id : get_current_user_id();
-
-	// Bail if we dont have a user ID and a post ID.
-	if ( empty( $post_id ) || empty( $user_id ) ) {
+	// Bail if we dont have a post ID.
+	if ( empty( $post_id ) ) {
 		return;
 	}
 
@@ -158,7 +153,7 @@ function compare_drip_dates( $post_id = 0, $user_id = 0 ) {
 	}
 
 	// attempt to get drip calculation
-	$drip_date  = Helpers\build_drip_date( $post_id, $user_id );
+	$drip_date  = Helpers\build_drip_date( $post_id, get_current_user_id() );
 
 	// return true if we've passed our drip duration
 	if ( absint( $time_now ) >= absint( $drip_date ) ) {
