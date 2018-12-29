@@ -17,6 +17,8 @@
 // Call our namepsace.
 namespace DripPress;
 
+// Call our CLI namespace.
+use WP_CLI;
 
 // Exit if accessed directly
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -41,19 +43,16 @@ define( __NAMESPACE__ . '\HOOK_PREFIX', 'dppress_' );
 define( __NAMESPACE__ . '\META_PREFIX', 'dppress_' );
 define( __NAMESPACE__ . '\NONCE_PREFIX', 'dppress_nonce_' );
 
-// Load the helper-type files.
+// Files that go on both ends.
 require_once __DIR__ . '/includes/helpers.php';
 require_once __DIR__ . '/includes/utilities.php';
 require_once __DIR__ . '/includes/formatting.php';
+require_once __DIR__ . '/includes/process.php';
 
 // Load the activation and deactivation items.
 require_once __DIR__ . '/includes/activate.php';
 require_once __DIR__ . '/includes/deactivate.php';
-
-// Files that go on both ends.
-require_once __DIR__ . '/includes/widgets.php';
-require_once __DIR__ . '/includes/shortcodes.php';
-require_once __DIR__ . '/includes/process.php';
+require_once __DIR__ . '/includes/uninstall.php';
 
 // Include the front-end files.
 if ( ! is_admin() ) {
@@ -63,6 +62,16 @@ if ( ! is_admin() ) {
 // Include the admin specific ones.
 if ( is_admin() ) {
 	require_once __DIR__ . '/includes/admin.php';
+	require_once __DIR__ . '/includes/quick-edit.php';
 	require_once __DIR__ . '/includes/post-meta.php';
 }
 
+// Check that we have the constant available.
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+
+	// Load our commands file.
+	require_once __DIR__ . '/includes/commands.php';
+
+	// And add our command.
+	WP_CLI::add_command( 'drip-press', Commands::class );
+}

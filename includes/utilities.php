@@ -30,7 +30,7 @@ function check_admin_screen( $key = '' ) {
 	$screen = get_current_screen();
 
 	// If we didn't get our screen object, bail.
-	if ( ! is_object( $screen ) ) {
+	if ( ! $screen || ! is_object( $screen ) ) {
 		return false;
 	}
 
@@ -90,10 +90,11 @@ function confirm_supported_type( $post_type = '' ) {
  * Fetch the user signup date to compare against content being displayed.
  *
  * @param  integer $user_id  The user ID we want to get information for.
+ * @param  boolean $store    Whether to store the value if we don't have it.
  *
  * @return mixed
  */
-function get_user_signup_date( $user_id = 0 ) {
+function get_user_signup_date( $user_id = 0, $store = false ) {
 
 	// Bail if no ID can be found.
 	if ( empty( $user_id ) ) {
@@ -101,7 +102,7 @@ function get_user_signup_date( $user_id = 0 ) {
 	}
 
 	// First check for the usermeta key.
-	$signup = get_user_meta( $user_id, Core\META_PREFIX . 'signup_date', true );
+	$signup = get_user_meta( $user_id, Core\META_PREFIX . 'signup_stamp', true );
 
 	// If we have no stored date, get the item from the user object.
 	if ( empty( $signup ) ) {
@@ -114,12 +115,17 @@ function get_user_signup_date( $user_id = 0 ) {
 			return false;
 		}
 
-		// Now set our signup time.
-		$signup = strtotime( $user_data->user_registered );
+		// Set our timestamp and then set it to midnight.
+		$signup = strtotime( 'today', strtotime( $user_data->user_registered ) );
+
+		// Store the date if requested.
+		if ( ! empty( $store ) ) {
+			update_user_meta( $user_id, Core\META_PREFIX . 'signup_stamp', absint( $signup ) );
+		}
 	}
 
 	// Send it back filtered with the user ID.
-	return apply_filters( 'dppress_user_signup', absint( $signup ), $user_id );
+	return apply_filters( Core\HOOK_PREFIX . 'user_signup', absint( $signup ), $user_id );
 }
 
 /**
@@ -129,51 +135,59 @@ function get_user_signup_date( $user_id = 0 ) {
  *
  * @return mixed
  */
-function compare_drip_dates( $post_id = 0 ) {
+function compare_drip_signup_dates( $post_id = 0 ) {
 
-	// Bail if we dont have a post ID.
+	// Bail if we dont have a post ID or a drip.
 	if ( empty( $post_id ) ) {
 		return;
 	}
 
-	// Get our post publish date.
-	$post_stamp = Helpers\get_published_datestamp( $post_id );
+	// Get the stored meta.
+	$stored_values  = Helpers\get_content_drip_meta( $post_id );
 
-	// Bail if we dont have a post date.
-	if ( empty( $post_stamp ) ) {
-		return;
-	}
-
-	// Pull our time now.
-	$time_now   = apply_filters( Core\HOOK_PREFIX . 'drip_baseline', current_time( 'timestamp', 1 ) );
-
-	// Bail on scheduled posts.
-	if ( absint( $post_stamp ) > absint( $time_now ) ) {
+	// Bail right away if we aren't set to live or have a range value.
+	if ( empty( $stored_values['live'] ) || empty( $stored_values['range'] ) || empty( $stored_values['count'] ) ) {
 		return false;
 	}
 
-	// attempt to get drip calculation
-	$drip_date  = Helpers\build_drip_date( $post_id, get_current_user_id() );
+	// Get the user signup date.
+	$signup_stamp   = get_user_signup_date( get_current_user_id() );
 
-	// return true if we've passed our drip duration
-	if ( absint( $time_now ) >= absint( $drip_date ) ) {
+	// Bail without a signup date.
+	if ( ! $signup_stamp ) {
+		return false;
+	}
+
+	// Get my current timestamp.
+	$today_stamp    = strtotime( 'today', time() );
+
+	// Get the timestamp for access.
+	$access_stamp   = Helpers\get_user_access_date( $stored_values['range'], $signup_stamp, $stored_values['count'] );
+
+	// Return true if we've passed our drip duration.
+	if ( absint( $today_stamp ) >= absint( $access_stamp ) ) {
 
 		// Set my return array.
 		return array(
-			'display' => true,
-			'item_id' => $post_id,
+			'display'    => true,
+			'access'     => $access_stamp,
+			'content_id' => $post_id,
 		);
 	}
 
-	// send back our message
-	if ( absint( $time_now ) < absint( $drip_date ) ) {
+	// Send back our message.
+	if ( absint( $today_stamp ) < absint( $access_stamp ) ) {
+
+		// Set my message args.
+		$message_args   = wp_parse_args( $stored_values, array( 'id' => $post_id, 'signup' => $signup_stamp ) );
 
 		// Set my return array.
 		return array(
-			'display'   => false,
-			'item_id'   => $post_id,
-			'remaining' => absint( $drip_date ) - absint( $time_now ),
-			'message'   => Helpers\get_pending_message( $drip_date, $post_id ),
+			'display'    => false,
+			'access'     => $access_stamp,
+			'content_id' => $post_id,
+			'remaining'  => absint( $access_stamp ) - absint( $today_stamp ),
+			'message'    => Helpers\get_pending_message( $access_stamp, $message_args ),
 		);
 	}
 
@@ -198,31 +212,4 @@ function get_date_format( $include_time = false ) {
 
 	// Send back my date format.
 	return apply_filters( Core\HOOK_PREFIX . 'date_format', $format_display, $include_time );
-}
-
-/**
- * Cacluate the seconds for drips.
- *
- * @param  integer $count  What the count was.
- * @param  string  $range  What the specific range was.
- *
- * @return integer
- */
-function calculate_content_drip( $count = 0, $range = '' ) {
-
-	// Bail if neither value came through.
-	if ( empty( $count ) || empty( $range ) ) {
-		return;
-	}
-
-	// Fetch the ranges we have.
-	$ranges	= Helpers\get_drip_ranges();
-
-	// Check for array key.
-	if ( empty( $ranges ) || ! array_key_exists( $range, $ranges ) ) {
-		return;
-	}
-
-	// Process the actual caluculation or false if we don't have it.
-	return ! empty( $ranges[ $range ]['value'] ) ? absint( $count ) * absint( $ranges[ $range ]['value'] ) : false;
 }

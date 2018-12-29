@@ -21,6 +21,7 @@ function activate() {
 
 	// Run the initial usermeta setup.
 	Process\set_user_signup_meta();
+	Process\set_initial_drip_sort();
 
 	// Include our action so that we may add to this later.
 	do_action( Core\HOOK_PREFIX . 'activate_process' );

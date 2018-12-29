@@ -12,7 +12,7 @@
 	display: inline-block;
 	vertical-align: top;
 	width: auto;
-	margin: 0;
+	margin: 0 0 6% 0;
 	padding: 0;
 }
 
@@ -23,6 +23,11 @@
 
 #dppress-schd-box ul.dppress-data li.dppress-range-field {
 	width: 65%;
+}
+
+#dppress-schd-box ul.dppress-data li.dppress-group-field {
+	width: 100%;
+	margin-bottom: 0;
 }
 
 #dppress-schd-box ul.dppress-data li span {
@@ -53,9 +58,12 @@
 	box-sizing: border-box;
 }
 
+#dppress-schd-box ul.dppress-data li.dppress-group-field input {
+	margin: 0 4px 0 0;
+}
+
 /* admin column */
 table.posts th.column-drip-length,
 table.posts td.column-drip-length {
-	text-align: center;
 	max-width: 100px;
 }

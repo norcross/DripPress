@@ -71,7 +71,7 @@ function display_drip_schedule_box( $post ) {
 
 			// Output the input portion.
 			echo '<span class="field-input">';
-				echo '<input type="text" class="widefat" name="dppress-meta-count" id="dppress-meta-count" value="' . absint( $stored_values['count'] ) . '">';
+				echo '<input type="number" min="1" step="1" class="widefat" name="dppress-meta-count" id="dppress-meta-count" value="' . absint( $stored_values['count'] ) . '">';
 			echo '</span>';
 
 		// Close the count field.
@@ -85,7 +85,7 @@ function display_drip_schedule_box( $post ) {
 
 			// Output the dropdown.
 			echo '<span class="field-input">';
-				echo Formatting\get_admin_range_dropdown( $stored_values['range'], $stored_values['count'], false );
+				echo Formatting\get_admin_range_dropdown( $stored_values['range'], $stored_values['count'], 'dppress-meta-range', false );
 			echo '<span>';
 
 		// Close the count field.
@@ -94,11 +94,18 @@ function display_drip_schedule_box( $post ) {
 	// Close the secondary list.
 	echo '</ul>';
 
-	// Use nonce for verification.
-	echo wp_nonce_field( Core\NONCE_PREFIX . 'schd_action', Core\NONCE_PREFIX . 'schd_name', false, false );
+	// Set the hidden fields with the same values so we can check for changes.
+	echo '<input type="hidden" name="dppress-meta-count-alt" id="dppress-meta-count-alt" value="' . absint( $stored_values['count'] ) . '">';
+	echo '<input type="hidden" name="dppress-meta-range-alt" id="dppress-meta-range-alt" value="' . esc_attr( $stored_values['range'] ) . '">';
 
-	// And our hidden value for sorting.
-	echo '<input type="hidden" name="dppress-sort" id="dppress-sort" value="' . absint( $stored_values['sort'] ) . '">';
+	// Include a hidden field to check on POST.
+	echo '<input type="hidden" name="dppress-trigger" id="dppress-trigger" value="go">';
+
+	// And our hidden value for the drip value.
+	echo '<input type="hidden" name="dppress-drip" id="dppress-drip" value="' . absint( $stored_values['drip'] ) . '">';
+
+	// Use nonce for verification.
+	echo wp_nonce_field( Core\NONCE_PREFIX . 'meta_action', Core\NONCE_PREFIX . 'meta_name', false, false );
 }
 
 /**
@@ -116,8 +123,23 @@ function save_drip_meta( $post_id, $post ) {
 		return;
 	}
 
+	// Bail out if running an ajax.
+	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+		return;
+	}
+
+	// Bail out if running a cron, unless we've skipped that.
+	if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+		return;
+	}
+
+	// Check for the trigger field.
+	if ( empty( $_POST[ 'dppress-trigger'] ) || 'go' !== sanitize_text_field( $_POST[ 'dppress-trigger'] ) ) {
+		return;
+	}
+
 	// Do our nonce check. ALWAYS A NONCE CHECK.
-	if ( empty( $_POST[ Core\NONCE_PREFIX . 'schd_name'] ) || ! wp_verify_nonce( $_POST[ Core\NONCE_PREFIX . 'schd_name'], Core\NONCE_PREFIX . 'schd_action' ) ) {
+	if ( empty( $_POST[ Core\NONCE_PREFIX . 'meta_name'] ) || ! wp_verify_nonce( $_POST[ Core\NONCE_PREFIX . 'meta_name'], Core\NONCE_PREFIX . 'meta_action' ) ) {
 		wp_die( __( 'Nonce failed. Why?', 'drip-press' ) );
 	}
 
@@ -134,16 +156,10 @@ function save_drip_meta( $post_id, $post ) {
 		return;
 	}
 
-	// Set the sorting time.
-	$set_timestamp  = ! empty( $_POST['dppress-sort'] ) ? $_POST['dppress-sort'] : current_time( 'timestamp', 1 );
-
 	// Bail and purge if we didn't check the box.
 	if ( empty( $_POST['dppress-live'] ) ) {
 
-		// Set the drip sort time for sorting purposes
-		update_post_meta( $post_id, Core\META_PREFIX . 'sort', $set_timestamp );
-
-		// Purge the rest.
+		// Set off our purge.
 		Process\purge_single_post_meta( $post_id );
 
 		// And be done.
@@ -157,44 +173,56 @@ function save_drip_meta( $post_id, $post ) {
 	// Bail and purge if we didn't include any values.
 	if ( empty( $drip_count ) || empty( $drip_range ) ) {
 
-		// Set the drip sort time for sorting purposes
-		update_post_meta( $post_id, Core\META_PREFIX . 'sort', $set_timestamp );
-
-		// Purge the rest.
+		// Set off our purge.
 		Process\purge_single_post_meta( $post_id );
 
 		// And be done.
 		return;
 	}
 
-	// Now set some metadata.
+	// Set our live flag.
 	update_post_meta( $post_id, Core\META_PREFIX . 'live', 1 );
-	update_post_meta( $post_id, Core\META_PREFIX . 'count', $drip_count );
-	update_post_meta( $post_id, Core\META_PREFIX . 'range', $drip_range );
 
-	// Attempt to calculate the drip value.
-	$calculate_drip = Utilities\calculate_content_drip( $drip_count, $drip_range );
+	// Set a flag to indicate a changed value.
+	$reset_drip = false;
 
-	// If we don't have a drip, set our timestamp and delete any drip value.
-	if ( empty( $calculate_drip ) ) {
+	// Now check for the alt values.
+	$alt_count  = ! empty( $_POST['dppress-meta-count-alt'] ) ? absint( $_POST['dppress-meta-count-alt'] ) : 0;
+	$alt_range  = ! empty( $_POST['dppress-meta-range-alt'] ) ? sanitize_text_field( $_POST['dppress-meta-range-alt'] ) : '';
 
-		// Set our timestamp.
-		update_post_meta( $post_id, Core\META_PREFIX . 'sort', $set_timestamp );
+	// Check the hidden count value to see if this is a new setting.
+	if ( empty( $alt_count ) || ! empty( $alt_count ) && absint( $alt_count ) !== absint( $drip_count ) ) {
 
-		// Delete the drip value.
-		delete_post_meta( $post_id, Core\META_PREFIX . 'drip' );
+		// Change my drip flag.
+		$reset_drip = true;
+
+		// And set the meta key.
+		update_post_meta( $post_id, Core\META_PREFIX . 'count', $drip_count );
 	}
 
-	// If we have a calculated value, store that.
-	if ( ! empty( $calculate_drip ) ) {
+	// Check the hidden range value to see if this is a new setting.
+	if ( empty( $alt_range ) || ! empty( $alt_range ) && esc_attr( $alt_range ) !== esc_attr( $drip_range ) ) {
 
-		// Set my updated sort time.
-		$update_sort_stamp  = absint( $set_timestamp ) + absint( $calculate_drip );
+		// Change my drip flag.
+		$reset_drip = true;
 
-		// Update my two meta keys.
-		update_post_meta( $post_id, Core\META_PREFIX . 'sort', $update_sort_stamp );
-		update_post_meta( $post_id, Core\META_PREFIX . 'drip', $calculate_drip );
+		// And set the meta key.
+		update_post_meta( $post_id, Core\META_PREFIX . 'range', $drip_range );
 	}
 
+	// Now handle dealing with the drip.
+	if ( empty( $_POST['dppress-drip'] ) || false !== $reset_drip ) {
+
+		// Now get the range value for the drip.
+		$drip_seconds   = Helpers\get_values_from_range( $drip_range, 'seconds' );
+
+		// Set my drip length.
+		$drip_length    = absint( $drip_count ) === 1 ? absint( $drip_seconds ) : absint( $drip_seconds ) * absint( $drip_count );
+
+		// And update the meta.
+		update_post_meta( $post_id, Core\META_PREFIX . 'drip', $drip_length );
+	}
+
+	// Perhaps there is more here, but not right now.
 }
 

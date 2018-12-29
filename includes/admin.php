@@ -18,8 +18,36 @@ use DripPress\Formatting as Formatting;
  * Start our engines.
  */
 add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\scripts_styles', 11 );
+add_action( 'pre_get_posts', __NAMESPACE__ . '\drip_sorting_request', 1 );
 add_action( 'manage_posts_custom_column', __NAMESPACE__ . '\post_columns_data', 10, 2 );
+add_action( 'manage_users_custom_column', __NAMESPACE__ . '\user_columns_data', 10, 3 );
 add_filter( 'manage_edit-post_columns', __NAMESPACE__ . '\post_columns_display' );
+add_filter( 'manage_users_columns', __NAMESPACE__ . '\user_columns_display' );
+add_filter( 'manage_edit-post_sortable_columns', __NAMESPACE__ . '\post_columns_sortable' );
+
+/**
+ * Handle the sorting if they requested it via drip.
+ *
+ * @param  object $query  The query being looked at.
+ *
+ * @return void
+ */
+function drip_sorting_request( $query ) {
+
+	// Bail if not the admin.
+	if ( ! is_admin() ) {
+		return;
+	}
+
+	// Get the orderby.
+	$orderby    = $query->get( 'orderby' );
+
+	// Modify the query if we requested ours.
+	if ( ! empty( $orderby ) && 'drip_length' === sanitize_text_field( $orderby ) ) {
+		$query->set( 'meta_key', Core\META_PREFIX . 'drip' );
+		$query->set( 'orderby', 'meta_value_num' );
+	}
+}
 
 /**
  * Load our CSS and JS when needed.
@@ -55,7 +83,7 @@ function scripts_styles( $hook ) {
 }
 
 /**
- * Set up the data for our custom columnms.
+ * Set up the data for our custom columns.
  *
  * @param  string  $column   The name of the column we're checking.
  * @param  integer $post_id  The post ID from the row.
@@ -70,11 +98,11 @@ function post_columns_data( $column, $post_id ) {
 		// Handle our drip length.
 		case 'drip-length':
 
-			// Set the label.
-			$label  = Formatting\display_drip_length( $post_id, __( 'not set', 'drip-press' ) );
+			// Set the length text.
+			$drip_length    = Formatting\display_drip_length( $post_id, '<em>' . __( 'not set', 'drip-press' ) . '</em>' );
 
 			// And echo it out.
-			echo '<p class="drip-length">' . esc_html( $label ) . '</p>';
+			echo '<p class="drip-length">' . wp_kses_post( $drip_length ) . '</p>';
 
  			// And break.
  			break;
@@ -84,7 +112,45 @@ function post_columns_data( $column, $post_id ) {
 }
 
 /**
+ * Get our custom user data for columns.
+ *
+ * @param  mixed   $value    The value being passed.
+ * @param  string  $column   The name of the column.
+ * @param  integer $user_id  Which user ID we have.
+ *
+ * @return mixed
+ */
+function user_columns_data( $value, $column, $user_id ) {
+
+	// Handle the column switch.
+	switch ( $column ) {
+
+		// Handle our registration length.
+		case 'user-registered':
+
+			// Set the length text.
+			$signup_stamp   = Utilities\get_user_signup_date( $user_id, true );
+
+			// Set my format.
+			$signup_format  = apply_filters( Core\HOOK_PREFIX . 'user_signup_display_format', 'Y/m/d' );
+
+			// And set it as a value.
+			$value  = '<p class="user-registered"><abbr title="' . date( 'Y/m/d g:i:s a', $signup_stamp ) . '">' . date( $signup_format, $signup_stamp ) . '</abbr></p>';
+
+ 			// And break.
+ 			break;
+
+		// End all case breaks.
+	}
+
+	// Return the column value.
+	return $value;
+}
+
+/**
  * Add our custom column to the display.
+ *
+ * @param  array $columns  The current array of columns.
  *
  * @return array
  */
@@ -93,6 +159,53 @@ function post_columns_display( $columns ) {
 	// Add our column if it doesn't already appear.
 	if ( ! isset( $columns['drip-length'] ) ) {
 		$columns['drip-length'] = __( 'Drip Length', 'drip-press' );
+	}
+
+	// Return the array of columns.
+	return $columns;
+}
+
+/**
+ * Add our custom column to the display.
+ *
+ * @param  array $columns  The current array of columns.
+ *
+ * @return array
+ */
+function user_columns_display( $columns ) {
+
+	// Add our column if it doesn't already appear.
+	if ( ! isset( $columns['user-registered'] ) ) {
+
+		// Set the posts as a variable.
+		$posts_column   = $columns['posts'];
+
+		// Unset the posts.
+		unset( $columns['posts'] );
+
+		// Add our new one.
+		$columns['user-registered'] = __( 'Registered', 'drip-press' );
+
+		// Add back the posts.
+		$columns['posts']   = $posts_column;
+	}
+
+	// Return the array of columns.
+	return $columns;
+}
+
+/**
+ * Set our drip length to be sortable.
+ *
+ * @param  array $columns  The current array of columns.
+ *
+ * @return array
+ */
+function post_columns_sortable( $columns ) {
+
+	// Add our column if it doesn't already appear.
+	if ( ! isset( $columns['drip-length'] ) ) {
+		$columns['drip-length'] = 'drip_length';
 	}
 
 	// Return the array of columns.

@@ -56,134 +56,16 @@ function display_drip_length( $post_id = 0, $default = '', $echo = true ) {
 }
 
 /**
- * Construct and display the HTML list of drip items.
- *
- * @param  array   $list_items  The array of list items.
- * @param  string  $list_type   Which sort of list display we have.
- * @param  boolean $echo        Whether to echo or just return.
- *
- * @return HTML
- */
-function display_drip_html_list( $list_items = array(), $list_type = 'widget', $echo = true ) {
-
-	// Bail without any items to list.
-	if ( empty( $list_items ) ) {
-		return;
-	}
-
-	// Set my empty.
-	$build  = '';
-
-	// Wrap our list in some markup.
-	$build .= '<ul class="drippress-list drippress-list-' . esc_html( $list_type ) . '">';
-
-	// Now loop my list items.
-	foreach ( $list_items as $item_id ) {
-
-		// Check our drip status.
-		$check  = Utilities\compare_drip_dates( $item_id );
-
-		// Set our class based on the display.
-		$class  = ! empty( $check['display'] ) ? 'drippress-item-show' : 'drippress-item-delay';
-
-		// Wrap the single list item.
-		$build .= '<li class="drippress-item ' . esc_attr( $class ) . '">';
-
-		// If we have passed the drip check, show the name and link as normal. Otherwise message.
-		if ( ! empty( $check['display'] ) ) {
-
-			// Fetch the two pieces I want.
-			$title  = get_the_title( $item_id );
-			$link   = get_permalink( $item_id );
-
-			// And make the link.
-			$build .= '<a href="' . esc_url( $link ) . '">' . esc_attr( $title ) . '</a>';
-		}
-
-		// If we have a false display, show the message without a link.
-		if ( empty( $check['display'] ) && ! empty( $check['message'] ) ) {
-			$build .= esc_attr( $check['message'] );
-		}
-
-		// Close single list item.
-		$build .= '</li>';
-	}
-
-	// Close the ordered list.
-	$build .= '</ul>';
-
-	// Return the build if not echo'd.
-	if ( ! $echo ) {
-		return $build;
-	}
-
-	// Echo my build.
-	echo $build;
-}
-
-/**
- * Construct and display the dropdown for selecting terms.
- *
- * @param  string  $taxonomy    Which taxonomy we want.
- * @param  string  $field_name  The name field to apply to the dropdown.
- * @param  string  $field_id    The ID field to apply to the dropdown.
- * @param  string  $selected    An optional item to indicate selected.
- * @param  boolean $echo        Whether to echo it out or just return it.
- *
- * @return HTML
- */
-function get_admin_term_dropdown( $taxonomy = '', $field_name = '', $field_id = '', $selected = '', $echo = true ) {
-
-	// Bail without being given a taxonomy.
-	if ( empty( $taxonomy ) ) {
-		return;
-	}
-
-	// Set up the dropdown args.
-	$dropdown_args  = array(
-		'show_option_none'  => __( '(Select)', 'drip-press' ),
-		'option_none_value' => '0',
-		'orderby'           => 'name',
-		'order'             => 'ASC',
-		'hide_empty'        => 0,
-		'echo'              => 0,
-		'selected'          => esc_attr( $selected ),
-		'name'              => esc_attr( $field_name ),
-		'id'                => esc_attr( $field_id ),
-		'class'             => 'widefat',
-		'taxonomy'          => esc_attr( $taxonomy ),
-		'hide_if_empty'     => true,
-		'value_field'       => 'slug',
-	);
-
-	// Attempt to fetch the dropdown markup.
-	$dropdown_setup = wp_dropdown_categories( $dropdown_args );
-
-	// Set my label.
-	$dropdown_label = '<label for="'. esc_attr( $field_id ) . '">' . __( 'Drip Term: ', 'drip-press' ) . '</label>';
-
-	// Set my markup based on whether we have a drop.
-	$dropdown_html  = ! empty( $dropdown_setup ) ? $dropdown_label . $dropdown_setup : __( 'There are no terms available.', 'drip-press' );
-
-	// Return the build if not echo'd.
-	if ( ! $echo ) {
-		return $dropdown_html;
-	}
-
-	// Echo my build.
-	echo $dropdown_html;
-}
-
-/**
  * Construct and display the dropdown for selecting a range.
  *
  * @param  string  $selected  An optional item to indicate selected.
  * @param  integer $count     How many things we have. Used for plurals.
+ * @param  string  $name      The field name and ID to use.
  * @param  boolean $echo      Whether to echo it out or just return it.
  *
  * @return HTML
  */
-function get_admin_range_dropdown( $selected = '', $count = 0, $echo = true ) {
+function get_admin_range_dropdown( $selected = '', $count = 0, $name = '', $echo = true ) {
 
 	// Get our available ranges.
 	$ranges_array   = Helpers\get_drip_ranges();
@@ -193,11 +75,14 @@ function get_admin_range_dropdown( $selected = '', $count = 0, $echo = true ) {
 		return;
 	}
 
+	// Set my class based on the name.
+	$class  = 'dppress-quick-range' === sanitize_text_field( $name ) ? 'quick-inline' : 'widefat';
+
 	// Set my empty.
 	$build  = '';
 
 	// Wrap the select tag.
-	$build .= '<select class="widefat" name="dppress-meta-range" id="dppress-meta-range">';
+	$build .= '<select class="' . esc_attr( $class ) . '" name="' . esc_attr( $name ) . '" id="' . esc_attr( $name ) . '">';
 
 		// Set our "blank" select option.
 		$build .= ' <option value="0">' . __( '(Select)', 'drip-press' ) . '</option>';
@@ -206,7 +91,7 @@ function get_admin_range_dropdown( $selected = '', $count = 0, $echo = true ) {
 		foreach ( $ranges_array as $range_key => $range_values ) {
 
 			// Determine our label.
-			$label  = ! empty( $count ) && absint( $count ) > 1 ? $range_values['plural'] : $range_values['single'];
+			$label  = empty( $count ) ? $range_values['blank'] : ( absint( $count ) === 1 ? $range_values['single'] : $range_values['plural'] );
 
 			// And make the thing.
 			$build .= '<option value="' . esc_attr( $range_key ) . '" ' . selected( $selected, $range_key, false ) . '>' . esc_html( $label ) . '</option>';

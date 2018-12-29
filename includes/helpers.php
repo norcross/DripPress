@@ -22,6 +22,138 @@ function get_supported_types() {
 }
 
 /**
+ * Get one (or more) values based on a range.
+ *
+ * @param  string $range   Which range we want.
+ * @param  string $single  A single value. Blank will return the array.
+ *
+ * @return mixed
+ */
+function get_values_from_range( $range = '', $single = '' ) {
+
+	// Bail without a range.
+	if ( empty( $range ) ) {
+		return false;
+	}
+
+	// Set an empty.
+	$setup_args = array();
+
+	// Now run the switch.
+	switch ( sanitize_key( $range ) ) {
+
+		case 'hour' :
+
+			// Create the array and break.
+			$setup_args = array( 'relative' => 'now', 'seconds' => HOUR_IN_SECONDS );
+			break;
+
+		case 'day' :
+
+			// Create the array and break.
+			$setup_args = array( 'relative' => 'tomorrow', 'seconds' => DAY_IN_SECONDS );
+			break;
+
+		case 'week' :
+
+			// Get my starting week.
+			$week_start = get_stored_week_start();
+
+			// Create the array and break.
+			$setup_args = array( 'relative' => $week_start, 'seconds' => WEEK_IN_SECONDS );
+			break;
+
+		// End all case breaks.
+	}
+
+	// Allow the args to be filtered.
+	$setup_args = apply_filters( Core\HOOK_PREFIX . 'range_values_setup_args', $setup_args, $range, $single );
+
+	// Return the entire setup arg if no single requested.
+	if ( empty( $single ) ) {
+		return ! empty( $setup_args ) ? $setup_args : false;
+	}
+
+	// Return the single key or false.
+	return isset( $setup_args[ $single ] ) ? $setup_args[ $single ] : false;
+}
+
+/**
+ * Get the written name of the item selected.
+ *
+ * @return string
+ */
+function get_stored_week_start() {
+
+	// Set the array of days.
+	$dayset = array(
+		'sunday',
+		'monday',
+		'tuesday',
+		'wednesday',
+		'thursday',
+		'friday',
+		'saturday',
+	);
+
+	// Now get the "start of week" value.
+	$stored = get_option( 'start_of_week', 1 );
+
+	// Now return the string.
+	return $dayset[ $stored ];
+}
+
+/**
+ * Get the date a user can access dripped content.
+ *
+ * @param  string  $range   What range we are comparing.
+ * @param  integer $signup  The timestamp of the user's signup.
+ * @param  integer $count   The increment we are applying to the range value.
+ *
+ * @return integer          The timestamp.
+ */
+function get_user_access_date( $range = '', $signup = 0, $count = 1 ) {
+
+	// Return false without a range or a signup.
+	if ( empty( $range ) || empty( $signup ) ) {
+		return false;
+	}
+
+	// Get my range values.
+	$range_values   = get_values_from_range( $range );
+
+	// Bail if we don't have the pieces in the range.
+	if ( empty( $range_values['relative'] ) || empty( $range_values['seconds'] ) ) {
+		return false;
+	}
+
+	// Calculate what the first stamps would be.
+	$start_stamp  = strtotime( esc_attr( $range_values['relative'] ), $signup );
+
+	// Set the incrementer.
+	$incrementer  = 2 === absint( $count ) ? $range_values['seconds'] : absint( $range_values['seconds'] ) * ( absint( $count ) - 1 );
+
+	// Now run the switch.
+	switch ( absint( $count ) ) {
+
+		case 1 :
+			return absint( $start_stamp );
+			break;
+
+		case 2 :
+			return absint( $start_stamp ) + absint( $incrementer );
+			break;
+
+		default :
+
+			return absint( $start_stamp ) + absint( $incrementer );
+			break;
+
+		// End all case breaks.
+	}
+}
+
+/**
  * Get all the meta for a single.
  *
  * @param  integer $post_id  The post ID we're checking.
@@ -37,92 +169,20 @@ function get_content_drip_meta( $post_id = 0, $single = '' ) {
 	}
 
 	// Create the data array.
-	$setup  = array(
+	$setup_args = array(
 		'live'  => get_post_meta( $post_id, Core\META_PREFIX . 'live', true ),
 		'count' => get_post_meta( $post_id, Core\META_PREFIX . 'count', true ),
 		'range' => get_post_meta( $post_id, Core\META_PREFIX . 'range', true ),
 		'drip'  => get_post_meta( $post_id, Core\META_PREFIX . 'drip', true ),
-		'sort'  => get_post_meta( $post_id, Core\META_PREFIX . 'sort', true ),
 	);
 
 	// Return our entire array if requested.
 	if ( empty( $single ) ) {
-		return $setup;
+		return $setup_args;
 	}
 
 	// Return the single key or false.
-	return isset( $setup[ $single ] ) ? $setup[ $single ] : false;
-}
-
-/**
- * Get a list of items to display.
- *
- * @param  string  $term   Which term we wanna look up.
- * @param  string  $tax    The taxonomy it belongs to.
- * @param  integer $count  How many to retrieve.
- * @param  string  $types  What post type(s) to look.
- *
- * @return array
- */
-function get_drip_list( $term, $tax = 'post_tag', $count = 5, $types = 'post' ) {
-
-	// Set post types to array if passed.
-	$types  = ! is_array( $types ) ? explode( ',', $types ) : $types;
-
-	// Set up the args for my query.
-	$setup  = array(
-		'fields'			=> 'ids',
-		'post_type'			=> $types,
-		'posts_per_page'	=> absint( $count ),
-		'meta_key'			=> Core\META_PREFIX . 'sort',
-		'order'				=> 'ASC',
-		'orderby'			=> 'meta_value_num',
-		'tax_query'			=> array(
-			array(
-				'taxonomy'	=> $tax,
-				'field'		=> 'slug',
-				'terms'		=> $term
-			),
-		)
-	);
-
-	// Allow the args to be filtered.
-	$setup  = apply_filters( Core\HOOK_PREFIX . 'drip_list_args', $setup, $term );
-
-	// Fetch my posts.
-	$query  = get_posts( $setup );
-
-	// Return what we've got.
-	return ! empty( $query ) && ! is_wp_error( $query ) ? $query : false;
-}
-
-/**
- * Fetch the content publish date for use in the drip comparison with available filter.
- *
- * @param  integer $post_id  Current post ID being checked.
- *
- * @return string  $date     Signup date in UNIX time.
- */
-function get_published_datestamp( $post_id = 0 ) {
-
-	// Check for current post if no ID is passed.
-	$post_id    = ! empty( $post_id ) ? $post_id : get_the_ID();
-
-	// Bail if no post ID can be found.
-	if ( empty( $post_id ) ) {
-		return;
-	}
-
-	// First check for GMT.
-	$stored_publish = get_post_field( 'post_date_gmt', $post_id, 'raw' );
-
-	// Fetch the local post date if GMT is missing.
-	if ( ! $stored_publish ) {
-		$stored_publish = get_post_field( 'post_date', $post_id, 'raw' );
-	}
-
-	// Send it back filtered.
-	return apply_filters( Core\HOOK_PREFIX . 'publish_datestamp', strtotime( $stored_publish ), $post_id );
+	return isset( $setup_args[ $single ] ) ? $setup_args[ $single ] : false;
 }
 
 /**
@@ -140,20 +200,24 @@ function get_drip_ranges( $single = '' ) {
 		'hour' => array(
 			'single' => __( 'Hour', 'drip-press' ),
 			'plural' => __( 'Hours', 'drip-press' ),
+			'blank'  => __( 'Hour(s)', 'drip-press' ),
 			'value'  => HOUR_IN_SECONDS
 		),
 
 		'day' => array(
 			'single' => __( 'Day', 'drip-press' ),
 			'plural' => __( 'Days', 'drip-press' ),
+			'blank'  => __( 'Day(s)', 'drip-press' ),
 			'value'  => DAY_IN_SECONDS
 		),
 
 		'week' => array(
 			'single' => __( 'Week', 'drip-press' ),
 			'plural' => __( 'Weeks', 'drip-press' ),
+			'blank'  => __( 'Week(s)', 'drip-press' ),
 			'value'  => WEEK_IN_SECONDS
 		),
+
 	);
 
 	// Set our ranges.
@@ -191,78 +255,14 @@ function get_single_drip_label( $range = '', $format = 'plural' ) {
 }
 
 /**
- * Fetch the drip date (if calculated), or attempt to make the calculation.
- *
- * @param  integer $post_id  The post ID we wanna check.
- *
- * @return mixed
- */
-function get_drip_value( $post_id = 0 ) {
-
-	// Just bail if no ID.
-	if ( empty( $post_id ) ) {
-		return false;
-	}
-
-	// Get the stored meta.
-	$stored_values  = get_content_drip_meta( $post_id );
-
-	// Bail without any meta to work with.
-	if ( empty( $stored_values ) ) {
-		return false;
-	}
-
-	// Return the drip if already calculated.
-	if ( ! empty( $stored_values['drip'] ) ) {
-		return $stored_values['drip'];
-	}
-
-	// No calculated value, get the meta and attempt to do it.
-	return Utilities\calculate_content_drip( $stored_values['count'], $stored_values['range'] );
-}
-
-/**
- * Handle the actual calculation of the drip date to be used.
- *
- * @param  integer $post_id  Current post ID being checked.
- * @param  integer $user_id  Current user ID being checked.
- *
- * @return string  $date     Drip date in UNIX time.
- */
-function build_drip_date( $post_id = 0, $user_id = 0 ) {
-
-	// Bail if we dont have a user ID and a post ID.
-	if ( empty( $post_id ) || empty( $user_id ) ) {
-		return false;
-	}
-
-	// Try to get our calculated drip value.
-	$drip_value = get_drip_value( $post_id );
-
-	// Bail without a drip value.
-	if ( ! $drip_value ) {
-		return false;
-	}
-
-	// Get our user signup date.
-	$user_date	= Utilities\get_user_signup_date( $user_id );
-
-	// Add the drip duration to the user signup date.
-	$drip_date  = absint( $user_date ) + absint( $drip_value );
-
-	// Send it back filtered.
-	return apply_filters( 'dppress_drip_date', $drip_date, $post_id, $user_id );
-}
-
-/**
  * The display message for when something is pending.
  *
- * @param  integer $timestamp  The timestamp of the drip.
- * @param  integer $post_id    Which item we're checking.
+ * @param  integer $timestamp     The timestamp of the drip.
+ * @param  array   $message_args  Optional args we can pass.
  *
  * @return string
  */
-function get_pending_message( $timestamp = 0, $post_id = 0 ) {
+function get_pending_message( $timestamp = 0, $message_args = array() ) {
 
 	// Bail without a drip date.
 	if ( empty( $timestamp ) ) {
@@ -273,8 +273,8 @@ function get_pending_message( $timestamp = 0, $post_id = 0 ) {
 	$formatted_date = date( Utilities\get_date_format(), $timestamp );
 
 	// set a default
-	$display_text   = sprintf( __( 'This content will be available %s', 'drip-press' ), esc_attr( $formatted_date ) );
+	$display_text   = sprintf( __( 'This content will be available to you on %s', 'drip-press' ), esc_attr( $formatted_date ) );
 
 	// Send it back filtered.
-	return apply_filters( Core\HOOK_PREFIX . 'pending_message', $display_text, $timestamp, $post_id );
+	return apply_filters( Core\HOOK_PREFIX . 'pending_message', $display_text, $timestamp, $message_args );
 }

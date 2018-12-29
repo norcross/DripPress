@@ -10,7 +10,6 @@ namespace DripPress\Deactivate;
 
 // Set our aliases.
 use DripPress as Core;
-use DripPress\Process as Process;
 
 /**
  * Delete various options when deactivating the plugin.
@@ -18,9 +17,6 @@ use DripPress\Process as Process;
  * @return void
  */
 function deactivate() {
-
-	// Purge the initial usermeta setup.
-	Process\purge_user_signup_meta();
 
 	// Include our action so that we may add to this later.
 	do_action( Core\HOOK_PREFIX . 'deactivate_process' );
