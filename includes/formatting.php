@@ -165,11 +165,12 @@ function get_shortcode_completed_button( $post_id = 0, $label = '', $echo = true
  * Construct and display the list of drip content.
  *
  * @param  array   $content  The content we are displaying.
+ * @param  string  $title    An optional title heading.
  * @param  boolean $echo     Whether to echo it out or just return it.
  *
  * @return HTML
  */
-function get_drip_content_list_with_progress( $content = array(), $echo = true ) {
+function get_drip_content_list_with_progress( $content = array(), $title = '', $echo = true ) {
 
 	// Bail without content.
 	if ( empty( $content ) ) {
@@ -183,7 +184,7 @@ function get_drip_content_list_with_progress( $content = array(), $echo = true )
 	$build .= '<div class="dppress-user-progress-wrap">';
 
 		// Maybe a title?
-		$build .= '<h3>Maybe a title?</h3>';
+		$build .= ! empty( $title ) ? '<h3>' . esc_html( $title ) . '</h3>' : '';
 
 		// Wrap it in a list.
 		$build .= '<ul>';
@@ -249,6 +250,11 @@ function get_drip_content_list_with_progress( $content = array(), $echo = true )
 	// Close up the div.
 	$build .= '</div>';
 
-	// Return the overall build.
-	return $build;
+	// Return the build if not echo'd.
+	if ( ! $echo ) {
+		return $build;
+	}
+
+	// Echo my build.
+	echo $build;
 }

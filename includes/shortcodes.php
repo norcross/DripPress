@@ -68,7 +68,7 @@ function shortcode_user_progress( $atts, $content = null ) {
 
 	// Parse my attributes.
 	$args   = shortcode_atts( array(
-		'thing' => 'something', // @todo figure out what needs to be passed.
+		'title' => '',
 	), $atts );
 
 	// Get all the available dripped content.
@@ -80,5 +80,5 @@ function shortcode_user_progress( $atts, $content = null ) {
 	}
 
 	// Send back our formatted list.
-	return Formatting\get_drip_content_list_with_progress( $drip_content );
+	return Formatting\get_drip_content_list_with_progress( $drip_content, $args['title'], false );
 }
