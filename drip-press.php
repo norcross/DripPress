@@ -57,6 +57,7 @@ require_once __DIR__ . '/includes/uninstall.php';
 // Include the front-end files.
 if ( ! is_admin() ) {
 	require_once __DIR__ . '/includes/front-end.php';
+	require_once __DIR__ . '/includes/shortcodes.php';
 }
 
 // Include the admin specific ones.

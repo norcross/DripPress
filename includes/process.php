@@ -12,6 +12,69 @@ namespace DripPress\Process;
 use DripPress as Core;
 
 /**
+ * Start our engines.
+ */
+add_action( 'init', __NAMESPACE__ . '\store_user_drip_progress' );
+
+/**
+ * Store the progress of a user when they submit something.
+ *
+ * @return void
+ */
+function store_user_drip_progress() {
+
+	// Make sure we aren't using autosave.
+	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+		return;
+	}
+
+	// Bail out if running an ajax.
+	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+		return;
+	}
+
+	// Bail out if running a cron, unless we've skipped that.
+	if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+		return;
+	}
+
+	// Make sure we have our prompt button.
+	if ( empty( $_POST['dppress-prompt-button'] ) || 'complete' !== sanitize_text_field( $_POST['dppress-prompt-button'] ) ) {
+		return;
+	}
+
+	// Do our nonce check. ALWAYS A NONCE CHECK.
+	if ( empty( $_POST[ Core\NONCE_PREFIX . 'status_name'] ) || ! wp_verify_nonce( $_POST[ Core\NONCE_PREFIX . 'status_name'], Core\NONCE_PREFIX . 'status_action' ) ) {
+		wp_die( __( 'Nonce failed. Why?', 'drip-press' ) );
+	}
+
+	// Make sure we have our IDs.
+	if ( empty( $_POST['dppress-prompt-post-id'] ) || empty( $_POST['dppress-prompt-user-id'] ) ) {
+		return false;
+	}
+
+	// Set my IDs.
+	$post_id    = absint( $_POST['dppress-prompt-post-id'] );
+	$user_id    = absint( $_POST['dppress-prompt-user-id'] );
+
+	// Handle the setup.
+	$setup_args = array( $post_id => current_time( 'timestamp' ) );
+
+	// Attempt to get the array of all the statuses they've done.
+	$maybe_has  = get_user_meta( $user_id, Core\META_PREFIX . 'drip_status', true );
+
+	// If it's empty, add it. otherwise, merge it.
+	$status_set = empty( $maybe_has ) ? $setup_args : $setup_args + $maybe_has;
+
+	// Now store the new value.
+	update_user_meta( $user_id, Core\META_PREFIX . 'drip_status', $status_set );
+
+	// And process the URL redirect.
+	wp_redirect( esc_url( get_permalink( $post_id ) ), 302 );
+	exit();
+}
+
+/**
  * Take the user signup date and set it as meta.
  *
  * @return void
@@ -107,9 +170,9 @@ function purge_user_signup_meta() {
 	// Prepare my query.
 	$setup  = $wpdb->prepare("
 		DELETE FROM $table
-		WHERE meta_key = %s
+		WHERE meta_key LIKE '%s'
 		",
-		esc_sql( Core\META_PREFIX . 'signup_stamp' )
+		esc_sql( Core\META_PREFIX . '%' )
 	);
 
 	// Run SQL query.

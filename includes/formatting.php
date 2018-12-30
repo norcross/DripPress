@@ -108,3 +108,53 @@ function get_admin_range_dropdown( $selected = '', $count = 0, $name = '', $echo
 	// Echo my build.
 	echo $build;
 }
+
+/**
+ * Construct and display the button for marking completed.
+ *
+ * @param  integer $post_id  The post ID we are displaying for.
+ * @param  string  $label    What the button label should be.
+ * @param  boolean $echo     Whether to echo it out or just return it.
+ *
+ * @return HTML
+ */
+function get_shortcode_completed_button( $post_id = 0, $label = '', $echo = true ) {
+
+	// Bail without any post ID.
+	if ( empty( $post_id ) || ! is_user_logged_in() ) {
+		return;
+	}
+
+	// Set my empty.
+	$build  = '';
+
+	// Open up the div.
+	$build .= '<div class="dppress-completed-prompt">';
+
+		// Wrap the form.
+		$build .= '<form class="dppress-prompt-form" method="post" action="' . esc_url( get_permalink( $post_id ) ) . '">';
+
+			// Include the button.
+			$build .= '<button name="dppress-prompt-button" type="submit" value="complete">' . esc_html( $label ) . '</button>';
+
+			// Include the post ID and user ID.
+			$build .= '<input name="dppress-prompt-post-id" type="hidden" value="' . absint( $post_id ) . '">';
+			$build .= '<input name="dppress-prompt-user-id" type="hidden" value="' . absint( get_current_user_id() ) . '">';
+
+			// Use nonce for verification.
+			$build .= wp_nonce_field( Core\NONCE_PREFIX . 'status_action', Core\NONCE_PREFIX . 'status_name', false, false );
+
+		// Close up the form.
+		$build .= '</form>';
+
+	// Close up the div.
+	$build .= '</div>';
+
+	// Return the build if not echo'd.
+	if ( ! $echo ) {
+		return $build;
+	}
+
+	// Echo my build.
+	echo $build;
+}

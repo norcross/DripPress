@@ -154,6 +154,32 @@ function get_user_access_date( $range = '', $signup = 0, $count = 1 ) {
 }
 
 /**
+ * Get the completed status on a particular post.
+ *
+ * @param  integer $post_id  The post ID being checked.
+ *
+ * @return mixed
+ */
+function get_user_content_status( $post_id = 0 ) {
+
+	// Don't run on non-logged in users. Maybe?
+	if ( empty( $post_id ) ) {
+		return false;
+	}
+
+	// Attempt to get the array of all the statuses they've done.
+	$status = get_user_meta( get_current_user_id(), Core\META_PREFIX . 'drip_status', true );
+
+	// Bail if no status array exists.
+	if ( empty( $status ) ) {
+		return false;
+	}
+
+	// Now return either the timestamp it was done or false.
+	return ! empty( $status[ $post_id ] ) ? absint( $status[ $post_id ] ) : false;
+}
+
+/**
  * Get all the meta for a single.
  *
  * @param  integer $post_id  The post ID we're checking.
@@ -277,4 +303,29 @@ function get_pending_message( $timestamp = 0, $message_args = array() ) {
 
 	// Send it back filtered.
 	return apply_filters( Core\HOOK_PREFIX . 'pending_message', $display_text, $timestamp, $message_args );
+}
+
+/**
+ * The display message for when something is completed.
+ *
+ * @param  integer $timestamp     The timestamp of the drip.
+ * @param  array   $message_args  Optional args we can pass.
+ *
+ * @return string
+ */
+function get_completed_message( $timestamp = 0, $message_args = array() ) {
+
+	// Bail without a drip date.
+	if ( empty( $timestamp ) ) {
+		return;
+	}
+
+	// Get our date all formatted.
+	$formatted_date = date( Utilities\get_date_format(), $timestamp );
+
+	// set a default
+	$display_text   = sprintf( __( 'This content was marked completed on %s', 'drip-press' ), esc_attr( $formatted_date ) );
+
+	// Send it back filtered.
+	return apply_filters( Core\HOOK_PREFIX . 'completed_message', $display_text, $timestamp, $message_args );
 }
