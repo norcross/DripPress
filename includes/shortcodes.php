@@ -13,11 +13,13 @@ use DripPress as Core;
 use DripPress\Helpers as Helpers;
 use DripPress\Utilities as Utilities;
 use DripPress\Formatting as Formatting;
+use DripPress\Process as Process;
 
 /**
  * Start our engines.
  */
 add_shortcode( 'drip-complete', __NAMESPACE__ . '\shortcode_completed' );
+add_shortcode( 'user-progress', __NAMESPACE__ . '\shortcode_user_progress' );
 
 /**
  * Handle the basic 'completed' button.
@@ -48,4 +50,35 @@ function shortcode_completed( $atts, $content = null ) {
 
 	// Return the button instead.
 	return Formatting\get_shortcode_completed_button( get_the_ID(), $args['label'], false );
+}
+
+/**
+ * Handle the display of the user drip list.
+ *
+ * @param  array $atts  Attributes.
+ *
+ * @return mixed
+ */
+function shortcode_user_progress( $atts, $content = null ) {
+
+	// Don't run on non-logged in users. Maybe?
+	if ( ! is_user_logged_in() ) {
+		return;
+	}
+
+	// Parse my attributes.
+	$args   = shortcode_atts( array(
+		'thing' => 'something', // @todo figure out what needs to be passed.
+	), $atts );
+
+	// Get all the available dripped content.
+	$drip_content   = Process\get_all_dripped_content();
+
+	// Bail without having any content to display.
+	if ( ! $drip_content ) {
+		return;
+	}
+
+	// Send back our formatted list.
+	return Formatting\get_drip_content_list_with_progress( $drip_content );
 }

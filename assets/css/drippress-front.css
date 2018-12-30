@@ -1,0 +1,70 @@
+
+/* user button */
+
+p.dppress-prompt-button-wrap {
+	text-align: center;
+}
+
+p.dppress-prompt-button-wrap button,
+p.dppress-prompt-button-wrap button[disabled]:hover,
+p.dppress-prompt-button-wrap button[disabled]:focus {
+	background: #1a1a1a;
+	border: 0;
+	border-radius: 4px;
+	color: #fff;
+	font-weight: 700;
+	letter-spacing: 1;
+	padding: 12px 15px;
+}
+
+p.dppress-prompt-button-wrap button:hover,
+p.dppress-prompt-button-wrap button:focus {
+	background: #007acc;
+}
+
+p.dppress-prompt-button-wrap button:focus {
+	outline: thin dotted;
+	outline-offset: -4px;
+}
+
+
+/* button completed status */
+
+.dppress-message {
+	text-align: center;
+}
+
+.dppress-message-completed {
+	font-style: italic;
+}
+
+/* drip content list */
+
+.dppress-content-list-item {}
+
+.dppress-content-accessible {}
+
+.dppress-content-restricted {}
+
+.dppress-content-completed {}
+
+.dppress-content-completed a {
+	text-decoration: none;
+	border-bottom: 0 none;
+	box-shadow: none;
+}
+
+.dppress-content-checkmark {
+	color: #4f8a10;
+	cursor: help;
+}
+
+.dppress-content-view-title {
+	opacity: 0.7;
+}
+
+.dppress-content-view-date {
+	display: block;
+	font-style: italic;
+	font-size: 80%;
+}

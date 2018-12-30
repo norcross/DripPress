@@ -129,13 +129,15 @@ function get_shortcode_completed_button( $post_id = 0, $label = '', $echo = true
 	$build  = '';
 
 	// Open up the div.
-	$build .= '<div class="dppress-completed-prompt">';
+	$build .= '<div class="dppress-completed-prompt-wrap">';
 
 		// Wrap the form.
 		$build .= '<form class="dppress-prompt-form" method="post" action="' . esc_url( get_permalink( $post_id ) ) . '">';
 
 			// Include the button.
-			$build .= '<button name="dppress-prompt-button" type="submit" value="complete">' . esc_html( $label ) . '</button>';
+			$build .= '<p class="dppress-prompt-button-wrap">';
+				$build .= '<button class="dppress-prompt-button" name="dppress-prompt-button" type="submit" value="complete">' . esc_html( $label ) . '</button>';
+			$build .= '</p>';
 
 			// Include the post ID and user ID.
 			$build .= '<input name="dppress-prompt-post-id" type="hidden" value="' . absint( $post_id ) . '">';
@@ -157,4 +159,96 @@ function get_shortcode_completed_button( $post_id = 0, $label = '', $echo = true
 
 	// Echo my build.
 	echo $build;
+}
+
+/**
+ * Construct and display the list of drip content.
+ *
+ * @param  array   $content  The content we are displaying.
+ * @param  boolean $echo     Whether to echo it out or just return it.
+ *
+ * @return HTML
+ */
+function get_drip_content_list_with_progress( $content = array(), $echo = true ) {
+
+	// Bail without content.
+	if ( empty( $content ) ) {
+		return;
+	}
+
+	// Set my empty for the build.
+	$build  = '';
+
+	// Wrap it in a div.
+	$build .= '<div class="dppress-user-progress-wrap">';
+
+		// Maybe a title?
+		$build .= '<h3>Maybe a title?</h3>';
+
+		// Wrap it in a list.
+		$build .= '<ul>';
+
+		// Now loop my content and start parsing it out.
+		foreach ( $content as $content ) {
+
+			// Check for the access on the content.
+			$maybe  = Utilities\compare_drip_signup_dates( $content['ID'] );
+
+			// If we have a false return (which means missing data) then skip.
+			if ( ! $maybe ) {
+				continue;
+			}
+
+			// Grab our status.
+			$status = Helpers\get_user_content_status( $content['ID'] );
+
+			// Set our class based on being accessible.
+			$class  = 'dppress-content-list-item';
+			$class .= ! empty( $maybe['display'] ) ? ' dppress-content-accessible' : ' dppress-content-restricted';
+			$class .= false !== $status ? ' dppress-content-completed' : '';
+
+			// Now the output.
+			$build .= '<li class="' . esc_attr( $class ) . '">';
+
+			// Check for the display flag.
+			if ( ! empty( $maybe['display'] ) ) {
+
+				// Output the main link.
+				$build .= '<a href="' . esc_url( $content['permalink'] ) . '">' . esc_html( $content['post_title'] ) . '</a>';
+
+				// Add the checkmark if it's done.
+				if ( false !== $status ) {
+
+					// Get our completed text for the hover title.
+					$hover  = Helpers\get_completed_message( $status );
+
+					// And output the checkmark.
+					$build .= ' <span title="' . esc_attr( $hover ) . '" class="dppress-content-checkmark">&#x2713;</span>';
+				}
+			}
+
+			// Check for empty, which means it'll show when.
+			if ( empty( $maybe['display'] ) ) {
+
+				// Output the title.
+				$build .= '<span class="dppress-content-view-title">' . esc_html( $content['post_title'] ) . '</span>';
+
+				// Handle our message if we have one.
+				if ( ! empty( $maybe['message'] ) ) {
+					$build .= ' <span class="dppress-content-view-date">' . wp_kses_post( $maybe['message'] ) . '</span>';
+				}
+			}
+
+			// Close the list item.
+			$build .= '</li>';
+		}
+
+		// Close the list.
+		$build .= '</ul>';
+
+	// Close up the div.
+	$build .= '</div>';
+
+	// Return the overall build.
+	return $build;
 }

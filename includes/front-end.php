@@ -16,8 +16,32 @@ use DripPress\Utilities as Utilities;
 /**
  * Start our engines.
  */
+add_action( 'wp_enqueue_scripts', __NAMESPACE__ . '\load_front_assets', 11 );
 add_action( 'pre_get_posts', __NAMESPACE__ . '\remove_drip_from_queries', 1 );
 add_filter( 'the_content', __NAMESPACE__ . '\drip_control', 11 );
+
+/**
+ * Load our CSS and JS when needed.
+ *
+ * @return void
+ */
+function load_front_assets() {
+
+	// Set my handle.
+	$file_handle    = 'drippress-front';
+
+	// Set a file suffix structure based on whether or not we want a minified version.
+	$file_build     = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? $file_handle : $file_handle . '.min';
+
+	// Set a version for whether or not we're debugging.
+	$file_version   = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? time() : Core\VERS;
+
+	// Load our CSS file.
+	wp_enqueue_style( $file_handle, Core\ASSETS_URL . '/css/' . $file_build . '.css', false, $file_version, 'all' );
+
+	// And our JS.
+	wp_enqueue_script( $file_handle, Core\ASSETS_URL . '/js/' . $file_build . '.js', array( 'jquery' ), $file_version, true );
+}
 
 /**
  * Removed dripped content from post queries.

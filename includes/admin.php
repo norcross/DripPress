@@ -17,7 +17,7 @@ use DripPress\Formatting as Formatting;
 /**
  * Start our engines.
  */
-add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\scripts_styles', 11 );
+add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\load_admin_assets', 11 );
 add_action( 'pre_get_posts', __NAMESPACE__ . '\drip_sorting_request', 1 );
 add_action( 'manage_posts_custom_column', __NAMESPACE__ . '\post_columns_data', 10, 2 );
 add_action( 'manage_users_custom_column', __NAMESPACE__ . '\user_columns_data', 10, 3 );
@@ -26,37 +26,13 @@ add_filter( 'manage_users_columns', __NAMESPACE__ . '\user_columns_display' );
 add_filter( 'manage_edit-post_sortable_columns', __NAMESPACE__ . '\post_columns_sortable' );
 
 /**
- * Handle the sorting if they requested it via drip.
- *
- * @param  object $query  The query being looked at.
- *
- * @return void
- */
-function drip_sorting_request( $query ) {
-
-	// Bail if not the admin.
-	if ( ! is_admin() ) {
-		return;
-	}
-
-	// Get the orderby.
-	$orderby    = $query->get( 'orderby' );
-
-	// Modify the query if we requested ours.
-	if ( ! empty( $orderby ) && 'drip_length' === sanitize_text_field( $orderby ) ) {
-		$query->set( 'meta_key', Core\META_PREFIX . 'drip' );
-		$query->set( 'orderby', 'meta_value_num' );
-	}
-}
-
-/**
  * Load our CSS and JS when needed.
  *
  * @param  string $hook  The page hook we're on.
  *
  * @return void
  */
-function scripts_styles( $hook ) {
+function load_admin_assets( $hook ) {
 
 	// Run our post type confirmation.
 	$confirm_type   = Utilities\confirm_supported_type( Utilities\check_admin_screen( 'type' ) );
@@ -80,6 +56,30 @@ function scripts_styles( $hook ) {
 
 	// And our JS.
 	wp_enqueue_script( $file_handle, Core\ASSETS_URL . '/js/' . $file_build . '.js', array( 'jquery' ), $file_version, true );
+}
+
+/**
+ * Handle the sorting if they requested it via drip.
+ *
+ * @param  object $query  The query being looked at.
+ *
+ * @return void
+ */
+function drip_sorting_request( $query ) {
+
+	// Bail if not the admin.
+	if ( ! is_admin() ) {
+		return;
+	}
+
+	// Get the orderby.
+	$orderby    = $query->get( 'orderby' );
+
+	// Modify the query if we requested ours.
+	if ( ! empty( $orderby ) && 'drip_length' === sanitize_text_field( $orderby ) ) {
+		$query->set( 'meta_key', Core\META_PREFIX . 'drip' );
+		$query->set( 'orderby', 'meta_value_num' );
+	}
 }
 
 /**
