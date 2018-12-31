@@ -4,7 +4,7 @@
 jQuery(document).ready( function($) {
 
 	// Handle the show / hide for the box.
-	if ( $( 'div#dppress-schd-box' ).length > 0 ){
+	if ( $( 'div#dppress-schd-box' ).length > 0 ) {
 
 		// First confirm the value on load.
 		if ( $('input#dppress-live' ).prop( 'checked' ) ) {

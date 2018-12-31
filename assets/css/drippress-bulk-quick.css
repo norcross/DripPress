@@ -1,0 +1,38 @@
+
+/* quick edit */
+
+.inline-edit-spacer {
+	width:50%;
+	float:left;
+}
+
+.inline-drippress-quick-fields,
+.inline-drippress-bulk-fields {
+	width: auto;
+}
+
+.inline-edit-row fieldset label span.inline-drippress-quick-row,
+.inline-edit-row fieldset label span.inline-drippress-bulk-row {
+	display: inline-block;
+	vertical-align: middle;
+	width: auto;
+	line-height: 2.5;
+}
+
+.inline-edit-row fieldset label span.inline-drippress-quick-row.inline-drippress-quick-label,
+.inline-edit-row fieldset label span.inline-drippress-bulk-row.inline-drippress-bulk-label {
+	font-style: italic;
+	padding-right: 0.5em;
+}
+
+.inline-edit-row fieldset label span.inline-drippress-quick-fields input,
+.inline-edit-row fieldset label span.inline-drippress-bulk-fields input {
+	margin-right: 5px;
+}
+
+.inline-edit-row fieldset label span.inline-drippress-quick-fields select,
+.inline-edit-row fieldset label span.inline-drippress-bulk-fields select {
+	vertical-align: top;
+}
+
+/* bulk edit */

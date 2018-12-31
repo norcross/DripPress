@@ -51,7 +51,7 @@ function load_quickedit_assets( $hook ) {
 	}
 
 	// Set my handle.
-	$handle = 'drippress-quick';
+	$handle = 'drippress-bulk-quick';
 
 	// Set a file suffix structure based on whether or not we want a minified version.
 	$file   = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? $handle : $handle . '.min';

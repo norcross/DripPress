@@ -76,7 +76,7 @@ function get_admin_range_dropdown( $selected = '', $count = 0, $name = '', $echo
 	}
 
 	// Set my class based on the name.
-	$class  = 'dppress-quick-range' === sanitize_text_field( $name ) ? 'quick-inline' : 'widefat';
+	$class  = 'dppress-meta-range' === sanitize_text_field( $name ) ? 'widefat' : 'quick-inline';
 
 	// Set my empty.
 	$build  = '';
