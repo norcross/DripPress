@@ -54,7 +54,9 @@ p.dppress-prompt-button-wrap button:focus {
 	box-shadow: none;
 }
 
-.dppress-content-checkmark {
+.dppress-content-icon {}
+
+.dppress-content-checkmark-complete {
 	color: #4f8a10;
 	cursor: help;
 }

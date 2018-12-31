@@ -172,6 +172,8 @@ function compare_drip_signup_dates( $post_id = 0 ) {
 			'display'    => true,
 			'access'     => $access_stamp,
 			'content_id' => $post_id,
+			'remaining'  => 0,
+			'message'    => Helpers\get_completed_message( $access_stamp ),
 		);
 	}
 

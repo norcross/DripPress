@@ -221,10 +221,10 @@ function get_drip_content_list_with_progress( $content = array(), $title = '', $
 				if ( false !== $status ) {
 
 					// Get our completed text for the hover title.
-					$hover  = Helpers\get_completed_message( $status );
+					$hover  = ! empty( $maybe['message'] ) ? wp_strip_all_tags( $maybe['message'], true ) : '';
 
 					// And output the checkmark.
-					$build .= ' <span title="' . esc_attr( $hover ) . '" class="dppress-content-checkmark">&#x2713;</span>';
+					$build .= ' <span title="' . esc_attr( $hover ) . '" class="dppress-content-icon dppress-content-checkmark-complete">&#x2713;</span>';
 				}
 			}
 
