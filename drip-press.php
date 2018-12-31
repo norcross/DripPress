@@ -63,8 +63,7 @@ if ( ! is_admin() ) {
 // Include the admin specific ones.
 if ( is_admin() ) {
 	require_once __DIR__ . '/includes/admin.php';
-	require_once __DIR__ . '/includes/quick-edit.php';
-	require_once __DIR__ . '/includes/bulk-edit.php';
+	require_once __DIR__ . '/includes/quick-bulk.php';
 	require_once __DIR__ . '/includes/post-meta.php';
 }
 
