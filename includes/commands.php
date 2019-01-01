@@ -101,6 +101,86 @@ class Commands extends WP_CLI_Command {
 	}
 
 	/**
+	 * Run our reset command.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--type]
+	 * : What type of meta to purge.
+	 * ---
+	 * default: none
+	 * options:
+	 *   - content
+	 *   - user
+	 *   - all
+	 * ---
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp drip-press reset
+	 *
+	 * @when after_wp_load
+	 */
+	function reset( $args = array(), $assoc_args = array() ) {
+
+		// Parse out the associatives.
+		$parsed = wp_parse_args( $assoc_args, array(
+			'type' => '',
+		));
+
+		// Bail without a type.
+		if ( empty( $parsed['type'] ) ) {
+			WP_CLI::error( __( 'No meta type was declared.', 'drip-press' ) );
+		}
+
+		// Set our intital update value.
+		$update = 0;
+
+		// Handle the type switch.
+		switch ( $parsed['type'] ) {
+
+			// Handle the user meta.
+			case 'user':
+			case 'users':
+
+				// Run the purge.
+				$update = Process\set_user_signup_meta( true );
+
+	 			// And break.
+	 			break;
+
+			// Handle the content meta.
+			case 'posts':
+			case 'content':
+
+				// Run the purge.
+				$update = Process\set_initial_drip_sort();
+
+	 			// And break.
+	 			break;
+
+			// Handle the combo meta.
+			case 'all':
+
+				// Run the twp purges.
+				$users  = Process\set_user_signup_meta( true );
+				$drips  = Process\set_initial_drip_sort();
+
+				// Add them up.
+				$update = absint( $users ) + absint( $drips );
+
+	 			// And break.
+	 			break;
+
+			// End all case breaks.
+		}
+
+		// Show the result and bail.
+		WP_CLI::success( sprintf( _n( '%d row has been reset.', '%d rows have been reset.', absint( $update ), 'drip-press' ), absint( $update ) ) );
+		WP_CLI::halt( 0 );
+	}
+
+	/**
 	 * This is a placeholder function for testing.
 	 *
 	 * ## EXAMPLES

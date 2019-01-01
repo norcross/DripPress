@@ -84,20 +84,19 @@ function set_user_drip_progress() {
 /**
  * Take the user signup date and set it as meta.
  *
+ * @param  boolean $run_global  Whether to run this on ALL users.
+ *
  * @return void
  */
-function set_user_signup_meta() {
+function set_user_signup_meta( $run_global = false ) {
+
+	// Check the global flag and set the meta accordingly.
+	$do_global  = false !== $run_global ? array() : array( 'key' => Core\META_PREFIX . 'signup_stamp', 'value'   => 'bug #23268', 'compare' => 'NOT EXISTS' );
 
 	// Set the args for a user lookup.
 	$user_args  = array(
 		'fields'     => array( 'ID', 'user_registered' ),
-		'meta_query' => array(
-			array(
-				'key'     => Core\META_PREFIX . 'signup_stamp',
-				'value'   => 'bug #23268',
-				'compare' => 'NOT EXISTS',
-			),
-		),
+		'meta_query' => array( $do_global ),
 	);
 
 	// Now attempt to get the users.
@@ -105,7 +104,7 @@ function set_user_signup_meta() {
 
 	// Bail without any users.
 	if ( empty( $user_query ) ) {
-		return;
+		return false;
 	}
 
 	// Set the clean array to create our meta values.
@@ -122,7 +121,7 @@ function set_user_signup_meta() {
 	}
 
 	// And we are done.
-	return true;
+	return count( $user_query );
 }
 
 /**
@@ -134,31 +133,31 @@ function set_initial_drip_sort() {
 	global $wpdb;
 
 	// Set my table name.
-	$table  = $wpdb->prefix . 'posts';
+	$table_name = $wpdb->prefix . 'posts';
 
 	// Set up our query.
-	$setup  = $wpdb->prepare("
+	$setup_args = $wpdb->prepare("
 		SELECT   ID
-		FROM     $table
+		FROM     $table_name
 		WHERE    post_status = '%s'
 		ORDER BY post_date DESC
 	", esc_sql( 'publish' ) );
 
 	// Process the query.
-	$query  = $wpdb->get_col( $setup );
+	$post_query = $wpdb->get_col( $setup_args );
 
 	// Bail without any users.
-	if ( empty( $query ) ) {
-		return;
+	if ( empty( $post_query ) ) {
+		return false;
 	}
 
 	// Now loop my query and set the initial meta.
-	foreach ( $query as $post_id ) {
+	foreach ( $post_query as $post_id ) {
 		update_post_meta( $post_id, Core\META_PREFIX . 'drip', 0 );
 	}
 
 	// And we are done.
-	return true;
+	return count( $post_query );
 }
 
 /**
@@ -233,10 +232,10 @@ function purge_user_signup_meta() {
 	global $wpdb;
 
 	// Set our table.
-	$table  = $wpdb->usermeta;
+	$table_name = $wpdb->usermeta;
 
 	// Prepare my query.
-	$setup  = $wpdb->prepare("
+	$setup_args = $wpdb->prepare("
 		DELETE FROM $table
 		WHERE meta_key LIKE '%s'
 		",
@@ -244,10 +243,10 @@ function purge_user_signup_meta() {
 	);
 
 	// Run SQL query.
-	$query = $wpdb->query( $setup );
+	$user_query = $wpdb->query( $setup_args );
 
 	// Send it back.
-	return ! empty( $query ) ? absint( $query ) : 0;
+	return ! empty( $user_query ) ? absint( $user_query ) : 0;
 }
 
 /**
@@ -261,10 +260,10 @@ function purge_content_drip_meta() {
 	global $wpdb;
 
 	// Set our table.
-	$table  = $wpdb->postmeta;
+	$table_name = $wpdb->postmeta;
 
 	// Prepare my query.
-	$setup  = $wpdb->prepare("
+	$setup_args = $wpdb->prepare("
 		DELETE FROM $table
 		WHERE meta_key LIKE '%s'
 		",
@@ -272,10 +271,10 @@ function purge_content_drip_meta() {
 	);
 
 	// Run SQL query.
-	$query = $wpdb->query( $setup );
+	$post_query = $wpdb->query( $setup_args );
 
 	// Send it back.
-	return ! empty( $query ) ? absint( $query ) : 0;
+	return ! empty( $post_query ) ? absint( $post_query ) : 0;
 }
 
 /**
