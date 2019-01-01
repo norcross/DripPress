@@ -35,6 +35,20 @@
 		}
 	};
 
+	// This is actually the checkbox inside the box.
+	$( document ).on( 'change', 'input#dppress-bulk-clear', function() {
+
+		// Define the bulk edit row.
+		var $bulk_row = $( '#bulk-edit' );
+
+		// See if the box is checked or not.
+		var $is_maybe = $( this ).prop( 'checked' );
+
+		// Now toggle the fields based on the result.
+		$bulk_row.find( 'input#dppress-bulk-count' ).prop( 'disabled', $is_maybe );
+		$bulk_row.find( 'select#dppress-bulk-range' ).prop( 'disabled', $is_maybe );
+	});
+
 	// Now we handle the bulk edit Ajax call.
 	$( document ).on( 'click', '#bulk_edit', function() {
 
@@ -67,6 +81,9 @@
 		var $drip_count = $bulk_row.find( 'input#dppress-bulk-count' ).val();
 		var $drip_range = $bulk_row.find( 'select#dppress-bulk-range' ).val();
 
+		// Also check for the clear.
+		var $drip_clear = $bulk_row.find( 'input#dppress-bulk-clear' ).prop( 'checked' );
+
 		// save the data
 		$.ajax({
 			url: ajaxurl, // this is a variable that WordPress has already defined for us
@@ -80,6 +97,7 @@
 				trigger: $drip_triggr,
 				count: $drip_count,
 				range: $drip_range,
+				clear: $drip_clear,
 			}
 		});
 	});

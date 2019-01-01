@@ -36,3 +36,27 @@
 }
 
 /* bulk edit */
+
+#wpbody-content .bulk-edit-row fieldset .inline-edit-group label.inline-edit-drippress,
+#wpbody-content .bulk-edit-row fieldset .inline-edit-group label.dppress-inline-row-label {
+	width: auto;
+	max-width: none;
+}
+
+.inline-edit-row fieldset label span.inline-drippress-bulk-row.inline-drippress-bulk-clear {
+	margin: 0 0 0 10px;
+	padding: 0 0 0 10px;
+}
+
+.inline-edit-row fieldset label span.inline-drippress-bulk-row.inline-drippress-bulk-clear input {
+	margin-bottom: -3px;
+}
+
+.inline-edit-row fieldset label span.inline-drippress-bulk-row.inline-drippress-bulk-clear label {
+	display: inline-block;
+	vertical-align: middle;
+	width: auto;
+	max-width: none;
+	font-style: italic;
+	padding-right: 0.5em;
+}

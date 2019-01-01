@@ -252,6 +252,12 @@ function display_drip_fields_bulkedit( $column, $post_type ) {
 
 					$field .= '</span>';
 
+					// Include the "clear it" checkmark.
+					$field .= '<span class="inline-drippress-bulk-row inline-drippress-bulk-clear">';
+						$field .= '<input id="dppress-bulk-clear" type="checkbox" name="dppress-bulk-clear" value="1" />';
+						$field .= '<label class="dppress-inline-row-label" for="dppress-bulk-clear">' . __( 'Remove drip schedule', 'drip-press' ) . '</label>';
+					$field .= '</span>';
+
 				// Close the label.
 				$field .= '</label>';
 
@@ -373,20 +379,37 @@ function save_drip_bulkedit() {
 		wp_die( __( 'Nonce failed. Why?', 'drip-press' ) );
 	}
 
-	// Make sure we have all the required pieces.
-	if ( empty( $_POST['post_ids'] ) || empty( $_POST['count'] ) || empty( $_POST['range'] ) ) {
+	// Make sure we have post IDs before going any farther.
+	if ( empty( $_POST['post_ids'] ) ) {
 		return;
 	}
 
-	// Sanitize all the $POSTed values.
+	// Sanitize the post IDs before going further.
 	$post_ids   = array_map( 'absint', $_POST['post_ids'] );
+
+	// If we triggered the clear flag, handle that.
+	if ( 'true' === sanitize_text_field( $_POST['clear'] ) ) {
+
+		// Loop each post ID and purge.
+		foreach ( $post_ids as $post_id ) {
+			Process\purge_single_post_meta( $post_id );
+		}
+
+		// And just die, because that is what the Codex said to do.
+		die();
+	}
+
+	// Now we have values and such.
+	if ( empty( $_POST['count'] ) || empty( $_POST['range'] ) ) {
+		return;
+	}
+
+	// Pull and clean up the values.
 	$drip_count = absint( $_POST['count'] );
 	$drip_range = sanitize_text_field( $_POST['range'] );
 
 	// Loop each post ID.
 	foreach ( $post_ids as $post_id ) {
-
-		// And update the meta.
 		update_quick_bulk_drip_meta( $post_id, $drip_count, $drip_range );
 	}
 

@@ -25,6 +25,11 @@ add_action( 'init', __NAMESPACE__ . '\set_user_drip_progress' );
  */
 function set_user_drip_progress() {
 
+	// Don't run on the admin.
+	if ( is_admin() ) {
+		return;
+	}
+
 	// Make sure we aren't using autosave.
 	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
 		return;
