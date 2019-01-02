@@ -134,17 +134,21 @@ function get_shortcode_completed_button( $post_id = 0, $label = '', $echo = true
 		// Wrap the form.
 		$build .= '<form class="dppress-prompt-form" method="post" action="' . esc_url( get_permalink( $post_id ) ) . '">';
 
-			// Include the button.
+			// Wrap it all in a paragraph.
 			$build .= '<p class="dppress-prompt-button-wrap">';
+
+				// Include the button.
 				$build .= '<button class="dppress-prompt-button" name="dppress-prompt-button" type="submit" value="complete">' . esc_html( $label ) . '</button>';
+
+				// Include the post ID and user ID.
+				$build .= '<input name="dppress-prompt-post-id" id="dppress-prompt-post-id" type="hidden" value="' . absint( $post_id ) . '">';
+				$build .= '<input name="dppress-prompt-user-id" id="dppress-prompt-user-id" type="hidden" value="' . absint( get_current_user_id() ) . '">';
+
+				// Use nonce for verification.
+				$build .= wp_nonce_field( Core\NONCE_PREFIX . 'status_action', Core\NONCE_PREFIX . 'status_name', false, false );
+
+			// Close up the button wrapper.
 			$build .= '</p>';
-
-			// Include the post ID and user ID.
-			$build .= '<input name="dppress-prompt-post-id" type="hidden" value="' . absint( $post_id ) . '">';
-			$build .= '<input name="dppress-prompt-user-id" type="hidden" value="' . absint( get_current_user_id() ) . '">';
-
-			// Use nonce for verification.
-			$build .= wp_nonce_field( Core\NONCE_PREFIX . 'status_action', Core\NONCE_PREFIX . 'status_name', false, false );
 
 		// Close up the form.
 		$build .= '</form>';

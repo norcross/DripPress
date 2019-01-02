@@ -14,74 +14,6 @@ use DripPress\Helpers as Helpers;
 use DripPress\Utilities as Utilities;
 
 /**
- * Start our engines.
- */
-add_action( 'init', __NAMESPACE__ . '\set_user_drip_progress' );
-
-/**
- * Store the progress of a user when they submit something.
- *
- * @return void
- */
-function set_user_drip_progress() {
-
-	// Don't run on the admin.
-	if ( is_admin() ) {
-		return;
-	}
-
-	// Make sure we aren't using autosave.
-	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-		return;
-	}
-
-	// Bail out if running an ajax.
-	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-		return;
-	}
-
-	// Bail out if running a cron, unless we've skipped that.
-	if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
-		return;
-	}
-
-	// Make sure we have our prompt button.
-	if ( empty( $_POST['dppress-prompt-button'] ) || 'complete' !== sanitize_text_field( $_POST['dppress-prompt-button'] ) ) {
-		return;
-	}
-
-	// Do our nonce check. ALWAYS A NONCE CHECK.
-	if ( empty( $_POST[ Core\NONCE_PREFIX . 'status_name'] ) || ! wp_verify_nonce( $_POST[ Core\NONCE_PREFIX . 'status_name'], Core\NONCE_PREFIX . 'status_action' ) ) {
-		wp_die( __( 'Nonce failed. Why?', 'drip-press' ) );
-	}
-
-	// Make sure we have our IDs.
-	if ( empty( $_POST['dppress-prompt-post-id'] ) || empty( $_POST['dppress-prompt-user-id'] ) ) {
-		return false;
-	}
-
-	// Set my IDs.
-	$post_id    = absint( $_POST['dppress-prompt-post-id'] );
-	$user_id    = absint( $_POST['dppress-prompt-user-id'] );
-
-	// Handle the setup.
-	$setup_args = array( $post_id => current_time( 'timestamp' ) );
-
-	// Attempt to get the array of all the statuses they've done.
-	$maybe_has  = get_user_meta( $user_id, Core\META_PREFIX . 'drip_status', true );
-
-	// If it's empty, add it. otherwise, merge it.
-	$status_set = empty( $maybe_has ) ? $setup_args : $setup_args + $maybe_has;
-
-	// Now store the new value.
-	update_user_meta( $user_id, Core\META_PREFIX . 'drip_status', $status_set );
-
-	// And process the URL redirect.
-	wp_redirect( esc_url( get_permalink( $post_id ) ), 302 );
-	exit();
-}
-
-/**
  * Take the user signup date and set it as meta.
  *
  * @param  boolean $run_global  Whether to run this on ALL users.
@@ -158,6 +90,65 @@ function set_initial_drip_sort() {
 
 	// And we are done.
 	return count( $post_query );
+}
+
+/**
+ * Store the single user drip progress.
+ *
+ * @param  integer $post_id  The post ID being saved.
+ * @param  integer $user_id  The ID of the user doing the saving.
+ *
+ * @return void
+ */
+function set_single_user_drip_progress( $post_id = 0, $user_id = 0 ) {
+
+	// Make sure we have each one.
+	if ( empty( $post_id ) || empty( $user_id ) ) {
+		return;
+	}
+
+	// Handle the setup.
+	$setup_args = array( $post_id => current_time( 'timestamp' ) );
+
+	// Attempt to get the array of all the statuses they've done.
+	$maybe_has  = get_user_meta( $user_id, Core\META_PREFIX . 'drip_status', true );
+
+	// If it's empty, add it. otherwise, merge it.
+	$status_set = empty( $maybe_has ) ? $setup_args : $setup_args + $maybe_has;
+
+	// Now store the new value.
+	update_user_meta( $user_id, Core\META_PREFIX . 'drip_status', $status_set );
+}
+
+/**
+ * Save the single meta for content.
+ *
+ * @param  integer $post_id     The post ID being saved.
+ * @param  integer $drip_count  What our count is.
+ * @param  string  $drip_range  The range we have.
+ *
+ * @return void
+ */
+function set_single_drip_meta( $post_id = 0, $drip_count = 0, $drip_range = '' ) {
+
+	// Make sure we have each one.
+	if ( empty( $post_id ) || empty( $drip_count ) || empty( $drip_range ) ) {
+		return;
+	}
+
+	// Update the three single meta keys.
+	update_post_meta( $post_id, Core\META_PREFIX . 'live', 1 );
+	update_post_meta( $post_id, Core\META_PREFIX . 'count', $drip_count );
+	update_post_meta( $post_id, Core\META_PREFIX . 'range', $drip_range );
+
+	// Now get the range value for the drip.
+	$drip_seconds   = Helpers\get_values_from_range( $drip_range, 'seconds' );
+
+	// Set my drip length.
+	$drip_length    = absint( $drip_count ) === 1 ? absint( $drip_seconds ) : absint( $drip_seconds ) * absint( $drip_count );
+
+	// And update the meta.
+	update_post_meta( $post_id, Core\META_PREFIX . 'drip', $drip_length );
 }
 
 /**

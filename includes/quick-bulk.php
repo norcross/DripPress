@@ -25,7 +25,6 @@ add_filter( 'hidden_columns', __NAMESPACE__ . '\set_hidden_column', 10, 3 );
 add_action( 'quick_edit_custom_box', __NAMESPACE__ . '\display_drip_fields_quickedit', 5, 2 );
 add_action( 'bulk_edit_custom_box', __NAMESPACE__ . '\display_drip_fields_bulkedit', 5, 2 );
 add_action( 'save_post', __NAMESPACE__ . '\save_drip_quickedit', 10, 2 );
-add_action( 'wp_ajax_save_drip_bulkedit', __NAMESPACE__ . '\save_drip_bulkedit' );
 
 /**
  * Load our admin side JS and CSS.
@@ -332,118 +331,7 @@ function save_drip_quickedit( $post_id, $post ) {
 	}
 
 	// And update the meta.
-	update_quick_bulk_drip_meta( $post_id, $drip_count, $drip_range );
+	Process\set_single_drip_meta( $post_id, $drip_count, $drip_range );
 
 	// Perhaps there is more here, but not right now.
-}
-
-/**
- * Handle saving the bulk edit drips.
- *
- * @return void
- */
-function save_drip_bulkedit() {
-
-	// Only run this on the admin side.
-	if ( ! is_admin() ) {
-		die();
-	}
-
-	// Bail out if running an autosave.
-	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-		return;
-	}
-
-	// Bail out if running a cron, unless we've skipped that.
-	if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
-		return;
-	}
-
-	// Bail if we are doing a REST API request.
-	if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
-		return;
-	}
-
-	// Check for the specific action.
-	if ( empty( $_POST['action'] ) || 'save_drip_bulkedit' !== sanitize_key( $_POST['action'] ) ) {
-		return;
-	}
-
-	// Check for the trigger.
-	if ( empty( $_POST['trigger'] ) || 'bulk' !== sanitize_key( $_POST['trigger'] ) ) {
-		return;
-	}
-
-	// Do our nonce check. ALWAYS A NONCE CHECK.
-	if ( empty( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], Core\NONCE_PREFIX . 'bulk_action' ) ) {
-		wp_die( __( 'Nonce failed. Why?', 'drip-press' ) );
-	}
-
-	// Make sure we have post IDs before going any farther.
-	if ( empty( $_POST['post_ids'] ) ) {
-		return;
-	}
-
-	// Sanitize the post IDs before going further.
-	$post_ids   = array_map( 'absint', $_POST['post_ids'] );
-
-	// If we triggered the clear flag, handle that.
-	if ( 'true' === sanitize_text_field( $_POST['clear'] ) ) {
-
-		// Loop each post ID and purge.
-		foreach ( $post_ids as $post_id ) {
-			Process\purge_single_post_meta( $post_id );
-		}
-
-		// And just die, because that is what the Codex said to do.
-		die();
-	}
-
-	// Now we have values and such.
-	if ( empty( $_POST['count'] ) || empty( $_POST['range'] ) ) {
-		return;
-	}
-
-	// Pull and clean up the values.
-	$drip_count = absint( $_POST['count'] );
-	$drip_range = sanitize_text_field( $_POST['range'] );
-
-	// Loop each post ID.
-	foreach ( $post_ids as $post_id ) {
-		update_quick_bulk_drip_meta( $post_id, $drip_count, $drip_range );
-	}
-
-	// And just die, because that is what the Codex said to do.
-	die();
-}
-
-/**
- * Save the single meta for a quick or bulk edit.
- *
- * @param  integer $post_id     The post ID being saved.
- * @param  integer $drip_count  What our count is.
- * @param  string  $drip_range  The range we have.
- *
- * @return void
- */
-function update_quick_bulk_drip_meta( $post_id = 0, $drip_count = 0, $drip_range = '' ) {
-
-	// Make sure we have each one.
-	if ( empty( $post_id ) || empty( $drip_count ) || empty( $drip_range ) ) {
-		return;
-	}
-
-	// Update the three single meta keys.
-	update_post_meta( $post_id, Core\META_PREFIX . 'live', 1 );
-	update_post_meta( $post_id, Core\META_PREFIX . 'count', $drip_count );
-	update_post_meta( $post_id, Core\META_PREFIX . 'range', $drip_range );
-
-	// Now get the range value for the drip.
-	$drip_seconds   = Helpers\get_values_from_range( $drip_range, 'seconds' );
-
-	// Set my drip length.
-	$drip_length    = absint( $drip_count ) === 1 ? absint( $drip_seconds ) : absint( $drip_seconds ) * absint( $drip_count );
-
-	// And update the meta.
-	update_post_meta( $post_id, Core\META_PREFIX . 'drip', $drip_length );
 }
