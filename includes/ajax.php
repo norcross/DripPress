@@ -144,7 +144,7 @@ function set_user_status() {
 	$return_setup   = array(
 		'errcode' => null,
 		'message' => __( 'This was marked as completed.', 'drip-press' ),
-		'markup'  => '<p class="dppress-message dppress-message-completed">' . Helpers\get_completed_message( current_time( 'timestamp' ) ) . '</p>'
+		'markup'  => Helpers\get_completed_message( current_time( 'timestamp' ), true ),
 	);
 
 	// And handle my JSON return.

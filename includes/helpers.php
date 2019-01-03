@@ -309,11 +309,12 @@ function get_pending_message( $timestamp = 0, $message_args = array() ) {
  * The display message for when something is completed.
  *
  * @param  integer $timestamp     The timestamp of the drip.
+ * @param  boolean $wrap_text     Whether to wrap the text output or not.
  * @param  array   $message_args  Optional args we can pass.
  *
  * @return string
  */
-function get_completed_message( $timestamp = 0, $message_args = array() ) {
+function get_completed_message( $timestamp = 0, $wrap_text = false, $message_args = array() ) {
 
 	// Bail without a drip date.
 	if ( empty( $timestamp ) ) {
@@ -323,9 +324,12 @@ function get_completed_message( $timestamp = 0, $message_args = array() ) {
 	// Get our date all formatted.
 	$formatted_date = date( Utilities\get_date_format(), $timestamp );
 
-	// set a default
+	// Construct our sentence.
 	$display_text   = sprintf( __( 'This content was marked completed on %s', 'drip-press' ), esc_attr( $formatted_date ) );
 
-	// Send it back filtered.
-	return apply_filters( Core\HOOK_PREFIX . 'completed_message', $display_text, $timestamp, $message_args );
+	// Run it back filtered.
+	$display_text   = apply_filters( Core\HOOK_PREFIX . 'completed_message', $display_text, $timestamp, $message_args );
+
+	// Return it wrapped. Or not.
+	return false !== $wrap_text ? '<p class="dppress-message dppress-message-completed">' . esc_attr( $display_text ) . '</p>' : $display_text;
 }

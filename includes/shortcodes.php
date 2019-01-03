@@ -45,7 +45,7 @@ function shortcode_completed( $atts, $content = null ) {
 
 	// If the status is not false, show the completed message.
 	if ( false !== $maybe_completed ) {
-		return '<p class="dppress-message dppress-message-completed">' . Helpers\get_completed_message( $maybe_completed ) . '</p>';
+		return Helpers\get_completed_message( $maybe_completed, true );
 	}
 
 	// Return the button instead.

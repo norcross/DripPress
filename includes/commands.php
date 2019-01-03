@@ -181,6 +181,72 @@ class Commands extends WP_CLI_Command {
 	}
 
 	/**
+	 * Add the shortcode to the bottom of every dripped content.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp drip-press addcode
+	 *
+	 * @when after_wp_load
+	 */
+	function addcode( $args = array(), $assoc_args = array() ) {
+
+		// Parse out the associatives.
+		$parsed = wp_parse_args( $assoc_args, array(
+			'type' => '',
+		));
+
+		// Attempt to get out dripped content.
+		$dripped_items  = Process\get_all_dripped_content( false );
+
+		// Bail without content.
+		if ( empty( $dripped_items ) ) {
+			WP_CLI::error( __( 'There is no content set up for drip.', 'drip-press' ) );
+		}
+
+		// Set our intital update values.
+		$update = 0;
+		$skippd = 0;
+
+		// Now loop our content.
+		foreach ( $dripped_items as $item ) {
+
+			// If we have the shortcode, skip it.
+			if ( strpos( $item->post_content, '[drip-complete]' ) !== false ) {
+
+				// Increment it.
+				$skippd++;
+
+				// Then get on to the next.
+				continue;
+			}
+
+			// We don't have it, so attempt to add it.
+			$item_content   = $item->post_content;
+
+			// Set the args.
+			$update_args    = array(
+				'ID'           => absint( $item->ID ),
+				'post_content' => $item_content . '[drip-complete]',
+			);
+
+			// Update the post into the database
+			wp_update_post( $update_args );
+
+			// Increment the updater.
+			$update++;
+		}
+
+		// Set our two result strings.
+		$results_update = sprintf( _n( '%d item has been updated.', '%d items have been updated.', absint( $update ), 'drip-press' ), absint( $update ) );
+		$results_skippd = sprintf( _n( '%d item did not require updating.', '%d items did not require updating.', absint( $skippd ), 'drip-press' ), absint( $skippd ) );
+
+		// Show the results and bail.
+		WP_CLI::success( $results_update . ' ' . $results_skippd );
+		WP_CLI::halt( 0 );
+	}
+
+	/**
 	 * This is a placeholder function for testing.
 	 *
 	 * ## EXAMPLES
