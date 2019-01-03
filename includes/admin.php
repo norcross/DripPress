@@ -13,16 +13,16 @@ use DripPress as Core;
 use DripPress\Helpers as Helpers;
 use DripPress\Utilities as Utilities;
 use DripPress\Formatting as Formatting;
+use DripPress\Process as Process;
 
 /**
  * Start our engines.
  */
 add_action( 'admin_enqueue_scripts', __NAMESPACE__ . '\load_admin_assets', 11 );
 add_action( 'pre_get_posts', __NAMESPACE__ . '\drip_sorting_request', 1 );
+add_filter( 'views_edit-post', __NAMESPACE__ . '\post_table_views' );
 add_action( 'manage_posts_custom_column', __NAMESPACE__ . '\post_columns_data', 10, 2 );
-add_action( 'manage_users_custom_column', __NAMESPACE__ . '\user_columns_data', 10, 3 );
 add_filter( 'manage_edit-post_columns', __NAMESPACE__ . '\post_columns_display' );
-add_filter( 'manage_users_columns', __NAMESPACE__ . '\user_columns_display' );
 add_filter( 'manage_edit-post_sortable_columns', __NAMESPACE__ . '\post_columns_sortable' );
 
 /**
@@ -72,14 +72,49 @@ function drip_sorting_request( $query ) {
 		return;
 	}
 
-	// Get the orderby.
-	$orderby    = $query->get( 'orderby' );
+	// Check for the post filter.
+	if ( ! empty( $_GET['drip_live'] ) ) {
 
-	// Modify the query if we requested ours.
-	if ( ! empty( $orderby ) && 'drip_length' === sanitize_text_field( $orderby ) ) {
+		// Build the meta query.
+		$meta_query = array(
+			'key'   => Core\META_PREFIX . 'live',
+			'value' => 1,
+		);
+
+		// Now set them as args.
+		$query->set( 'meta_query', array( $meta_query ) );
+	}
+
+	// Modify the query if we requested orderby.
+	if ( ! empty( $query->get( 'orderby' ) ) && 'drip_length' === sanitize_text_field( $query->get( 'orderby' ) ) ) {
 		$query->set( 'meta_key', Core\META_PREFIX . 'drip' );
 		$query->set( 'orderby', 'meta_value_num' );
 	}
+}
+
+/**
+ * Include our custom views for dripped content.
+ *
+ * @param  array $views  The existing array of views.
+ *
+ * @return array
+ */
+function post_table_views( $views ) {
+
+	// Then create our link.
+	$dripped_link   = add_query_arg( array( 'post_type' => 'post', 'drip_live' => 1 ) );
+
+	// Go get our dripped count.
+	$dripped_count  = Process\get_dripped_content_count();
+
+	// Set the class.
+	$dripped_class  = ! empty( $_GET['drip_live'] ) ? 'current' : '';
+
+	// Now include this in my views.
+	$views['drip']  = '<a class="' . esc_attr( $dripped_class ) . '" href="' . esc_url_raw( $dripped_link ) . '">' . __( 'Dripped', 'drip-press' ) . ' <span class="count">(' . absint( $dripped_count ) . ')</span></a>';
+
+	// And return them.
+	return $views;
 }
 
 /**
@@ -112,42 +147,6 @@ function post_columns_data( $column, $post_id ) {
 }
 
 /**
- * Get our custom user data for columns.
- *
- * @param  mixed   $value    The value being passed.
- * @param  string  $column   The name of the column.
- * @param  integer $user_id  Which user ID we have.
- *
- * @return mixed
- */
-function user_columns_data( $value, $column, $user_id ) {
-
-	// Handle the column switch.
-	switch ( $column ) {
-
-		// Handle our registration length.
-		case 'user-registered':
-
-			// Set the length text.
-			$signup_stamp   = Utilities\get_user_signup_date( $user_id, true );
-
-			// Set my format.
-			$signup_format  = apply_filters( Core\HOOK_PREFIX . 'user_signup_display_format', 'Y/m/d' );
-
-			// And set it as a value.
-			$value  = '<p class="user-registered"><abbr title="' . date( 'Y/m/d g:i:s a', $signup_stamp ) . '">' . date( $signup_format, $signup_stamp ) . '</abbr></p>';
-
- 			// And break.
- 			break;
-
-		// End all case breaks.
-	}
-
-	// Return the column value.
-	return $value;
-}
-
-/**
  * Add our custom column to the display.
  *
  * @param  array $columns  The current array of columns.
@@ -159,35 +158,6 @@ function post_columns_display( $columns ) {
 	// Add our column if it doesn't already appear.
 	if ( ! isset( $columns['drip-length'] ) ) {
 		$columns['drip-length'] = __( 'Drip Length', 'drip-press' );
-	}
-
-	// Return the array of columns.
-	return $columns;
-}
-
-/**
- * Add our custom column to the display.
- *
- * @param  array $columns  The current array of columns.
- *
- * @return array
- */
-function user_columns_display( $columns ) {
-
-	// Add our column if it doesn't already appear.
-	if ( ! isset( $columns['user-registered'] ) ) {
-
-		// Set the posts as a variable.
-		$posts_column   = $columns['posts'];
-
-		// Unset the posts.
-		unset( $columns['posts'] );
-
-		// Add our new one.
-		$columns['user-registered'] = __( 'Registered', 'drip-press' );
-
-		// Add back the posts.
-		$columns['posts']   = $posts_column;
 	}
 
 	// Return the array of columns.

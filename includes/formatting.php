@@ -191,7 +191,7 @@ function get_drip_content_list_with_progress( $content = array(), $title = '', $
 		$build .= ! empty( $title ) ? '<h3>' . esc_html( $title ) . '</h3>' : '';
 
 		// Wrap it in a list.
-		$build .= '<ul>';
+		$build .= '<ul class="dppress-user-progress-list">';
 
 		// Now loop my content and start parsing it out.
 		foreach ( $content as $content ) {
@@ -219,7 +219,7 @@ function get_drip_content_list_with_progress( $content = array(), $title = '', $
 			if ( ! empty( $maybe['display'] ) ) {
 
 				// Output the main link.
-				$build .= '<a href="' . esc_url( $content['permalink'] ) . '">' . esc_html( $content['post_title'] ) . '</a>';
+				$build .= '<a class="dppress-content-list-link" href="' . esc_url( $content['permalink'] ) . '">' . esc_html( $content['post_title'] ) . '</a>';
 
 				// Add the checkmark if it's done.
 				if ( false !== $status ) {
@@ -236,11 +236,11 @@ function get_drip_content_list_with_progress( $content = array(), $title = '', $
 			if ( empty( $maybe['display'] ) ) {
 
 				// Output the title.
-				$build .= '<span class="dppress-content-view-title">' . esc_html( $content['post_title'] ) . '</span>';
+				$build .= '<span class="dppress-content-view-item dppress-content-view-title">' . esc_html( $content['post_title'] ) . '</span>';
 
 				// Handle our message if we have one.
 				if ( ! empty( $maybe['message'] ) ) {
-					$build .= ' <span class="dppress-content-view-date">' . wp_kses_post( $maybe['message'] ) . '</span>';
+					$build .= ' <span class="dppress-content-view-item dppress-content-view-date">' . wp_kses_post( $maybe['message'] ) . '</span>';
 				}
 			}
 

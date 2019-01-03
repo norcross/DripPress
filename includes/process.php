@@ -152,16 +152,45 @@ function set_single_drip_meta( $post_id = 0, $drip_count = 0, $drip_range = '' )
 }
 
 /**
+ * Get just the count of content set live.
+ *
+ * @return integer
+ */
+function get_dripped_content_count() {
+
+	// Call the global database.
+	global $wpdb;
+
+	// Set my table name.
+	$table_name = $wpdb->prefix . 'postmeta';
+
+	// Set up our query.
+	$setup_args = $wpdb->prepare("
+		SELECT   post_id
+		FROM     $table_name
+		WHERE    meta_key = '%s'
+		AND      meta_value = '%d'
+	", esc_sql( Core\META_PREFIX . 'live' ), absint( 1 ) );
+
+	// Process the query.
+	$post_query = $wpdb->get_col( $setup_args );
+
+	// Return the count (or zero).
+	return ! empty( $post_query ) && ! is_wp_error( $post_query ) ? count( $post_query ) : 0;
+}
+
+/**
  * Get all the content that has a drip applied to it.
  *
  * @param  boolean $format  Whether to format the return or just give back all the objects.
+ * @param  array   $custom  Any custom args to include in the query.
  *
  * @return array
  */
-function get_all_dripped_content( $format = true ) {
+function get_all_dripped_content( $format = true, $custom = array() ) {
 
 	// Set up the args to get content.
-	$setup_args = array(
+	$basic_args = array(
 		'nopaging'    => true,
 		'post_type'   => 'post',
 		'post_status' => 'publish',
@@ -175,6 +204,9 @@ function get_all_dripped_content( $format = true ) {
 		'order'       => 'ASC',
 		'orderby'     => 'meta_value_num',
 	);
+
+	// Attempt to merge any custom.
+	$setup_args = ! empty( $custom ) ? wp_parse_args( $custom, $basic_args ) : $basic_args;
 
 	// Get the items we have.
 	$drip_items = get_posts( $setup_args );

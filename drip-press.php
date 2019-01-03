@@ -49,6 +49,7 @@ require_once __DIR__ . '/includes/utilities.php';
 require_once __DIR__ . '/includes/formatting.php';
 require_once __DIR__ . '/includes/process.php';
 require_once __DIR__ . '/includes/ajax.php';
+require_once __DIR__ . '/includes/users.php';
 
 // Load the activation and deactivation items.
 require_once __DIR__ . '/includes/activate.php';

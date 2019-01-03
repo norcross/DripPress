@@ -18,9 +18,7 @@ use DripPress\Process as Process;
  * Start our engines.
  */
 add_action( 'wp_enqueue_scripts', __NAMESPACE__ . '\load_front_assets', 11 );
-add_action( 'pre_get_posts', __NAMESPACE__ . '\remove_drip_from_queries', 1 );
 add_filter( 'the_content', __NAMESPACE__ . '\drip_control', 11 );
-add_action( 'init', __NAMESPACE__ . '\set_user_drip_progress' );
 
 /**
  * Load our CSS and JS when needed.
@@ -46,26 +44,6 @@ function load_front_assets() {
 	wp_localize_script( $file_handle, 'dppressLocal', array(
 		'ajaxurl'	=> admin_url( 'admin-ajax.php' ),
 	));
-}
-
-/**
- * Removed dripped content from post queries.
- *
- * @param  object $query  The existing query object.
- *
- * @return object
- */
-function remove_drip_from_queries( $query ) {
-
-	// Don't run on admin.
-	if ( is_admin() ) {
-		return $query;
-	}
-
-	// @@todo figure out how to find the posts.
-
-	// Send back the possibly modified query.
-	return $query;
 }
 
 /**
@@ -121,56 +99,3 @@ function drip_control( $content ) {
 	return apply_filters( Core\HOOK_PREFIX . 'drip_pending_message_format', wpautop( $drip_message ) );
 }
 
-/**
- * Store the progress of a user when they submit something.
- *
- * @return void
- */
-function set_user_drip_progress() {
-
-	// Don't run on the admin.
-	if ( is_admin() ) {
-		return;
-	}
-
-	// Make sure we aren't using autosave.
-	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-		return;
-	}
-
-	// Bail out if running an ajax.
-	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-		return;
-	}
-
-	// Bail out if running a cron, unless we've skipped that.
-	if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
-		return;
-	}
-
-	// Make sure we have our prompt button.
-	if ( empty( $_POST['dppress-prompt-button'] ) || 'complete' !== sanitize_text_field( $_POST['dppress-prompt-button'] ) ) {
-		return;
-	}
-
-	// Do our nonce check. ALWAYS A NONCE CHECK.
-	if ( empty( $_POST[ Core\NONCE_PREFIX . 'status_name'] ) || ! wp_verify_nonce( $_POST[ Core\NONCE_PREFIX . 'status_name'], Core\NONCE_PREFIX . 'status_action' ) ) {
-		wp_die( __( 'Nonce failed. Why?', 'drip-press' ) );
-	}
-
-	// Make sure we have our IDs.
-	if ( empty( $_POST['dppress-prompt-post-id'] ) || empty( $_POST['dppress-prompt-user-id'] ) ) {
-		return false;
-	}
-
-	// Set my IDs.
-	$post_id    = absint( $_POST['dppress-prompt-post-id'] );
-	$user_id    = absint( $_POST['dppress-prompt-user-id'] );
-
-	// Now store the new value.
-	Process\set_single_user_drip_progress( $post_id, $user_id );
-
-	// And process the URL redirect.
-	wp_redirect( esc_url( get_permalink( $post_id ) ), 302 );
-	exit();
-}

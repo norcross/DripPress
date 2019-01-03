@@ -34,7 +34,7 @@ function save_drip_bulkedit() {
 	}
 
 	// Do the constants check.
-	$constants  = check_constants_for_ajax();
+	$constants  = Utilities\check_constants_for_process( false );
 
 	// Bail out if we hit a constant.
 	if ( ! $constants ) {
@@ -107,7 +107,7 @@ function set_user_status() {
 	}
 
 	// Do the constants check.
-	$constants  = check_constants_for_ajax();
+	$constants  = Utilities\check_constants_for_process( false );
 
 	// Bail out if we hit a constant.
 	if ( ! $constants ) {
@@ -149,32 +149,6 @@ function set_user_status() {
 
 	// And handle my JSON return.
 	wp_send_json_success( $return_setup );
-}
-
-/**
- * Check the constants we know about during an Ajax call.
- *
- * @return boolean
- */
-function check_constants_for_ajax() {
-
-	// Bail out if running an autosave.
-	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-		return false;
-	}
-
-	// Bail out if running a cron, unless we've skipped that.
-	if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
-		return false;
-	}
-
-	// Bail if we are doing a REST API request.
-	if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
-		return false;
-	}
-
-	// Passed them all. Return true.
-	return true;
 }
 
 /**

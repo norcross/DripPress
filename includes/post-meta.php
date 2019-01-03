@@ -118,18 +118,11 @@ function display_drip_schedule_box( $post ) {
  */
 function save_drip_meta( $post_id, $post ) {
 
-	// Make sure we aren't using autosave.
-	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-		return;
-	}
+	// Do the constants check.
+	$constants  = Utilities\check_constants_for_process();
 
-	// Bail out if running an ajax.
-	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-		return;
-	}
-
-	// Bail out if running a cron, unless we've skipped that.
-	if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+	// Bail out if we hit a constant.
+	if ( ! $constants ) {
 		return;
 	}
 
