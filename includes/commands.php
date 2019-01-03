@@ -50,7 +50,7 @@ class Commands extends WP_CLI_Command {
 
 		// Bail without a type.
 		if ( empty( $parsed['type'] ) ) {
-			WP_CLI::error( __( 'No meta type was declared.', 'drip-press' ) );
+			WP_CLI::error( __( 'The required meta type was not provided.', 'drip-press' ) );
 		}
 
 		// Set our intital update value.
@@ -130,7 +130,7 @@ class Commands extends WP_CLI_Command {
 
 		// Bail without a type.
 		if ( empty( $parsed['type'] ) ) {
-			WP_CLI::error( __( 'No meta type was declared.', 'drip-press' ) );
+			WP_CLI::error( __( 'The required meta type was not provided.', 'drip-press' ) );
 		}
 
 		// Set our intital update value.
