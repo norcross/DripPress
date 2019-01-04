@@ -40,25 +40,47 @@ p.dppress-prompt-button-wrap button:focus {
 
 /* drip content list */
 
-.dppress-content-list-item {}
+.dppress-user-progress-list {
+	list-style: none;
+	margin: 0 0 10px;
+	padding: 0 0 10px;
+}
+
+.dppress-content-list-item {
+	border: 1px solid #ccc;
+	background-color: #fff;
+	padding: 4px 8px;
+	margin: 0 0 2px 0;
+	position: relative;
+}
 
 .dppress-content-accessible {}
 
 .dppress-content-restricted {}
 
-.dppress-content-completed {}
-
-.dppress-content-completed a {
-	text-decoration: none;
-	border-bottom: 0 none;
-	box-shadow: none;
+.dppress-content-completed {
+	background-color: #f5f5f5;
 }
 
-.dppress-content-icon {}
+.dppress-content-completed a {}
+
+.dppress-content-icon {
+	border: 1px solid #666;
+	background-color: #fff;
+	position: absolute;
+	top: 5px;
+	right: 25px;
+}
 
 .dppress-content-checkmark-complete {
 	color: #4f8a10;
 	cursor: help;
+	padding: 1px 5px;
+	font-size: 20px;
+	text-align: center;
+	line-height: 1;
+	height: 26px;
+	width: 26px;
 }
 
 .dppress-content-view-title {
@@ -66,7 +88,8 @@ p.dppress-prompt-button-wrap button:focus {
 }
 
 .dppress-content-view-date {
-	display: block;
+	margin-left: 10px;
 	font-style: italic;
+	font-weight: 700;
 	font-size: 80%;
 }

@@ -197,7 +197,7 @@ function get_drip_content_list_with_progress( $content = array(), $title = '', $
 		foreach ( $content as $content ) {
 
 			// Check for the access on the content.
-			$maybe  = Utilities\compare_drip_signup_dates( $content['ID'] );
+			$maybe  = Utilities\compare_drip_signup_dates( $content['ID'], 'list' );
 
 			// If we have a false return (which means missing data) then skip.
 			if ( ! $maybe ) {

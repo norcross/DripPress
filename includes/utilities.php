@@ -163,10 +163,11 @@ function get_user_signup_date( $user_id = 0, $store = false ) {
  * Compare the signup date to the drip schedule.
  *
  * @param  integer $post_id  The content ID we wanna check.
+ * @param  string  $display  Where this is being displayed. Impacts the message.
  *
  * @return mixed
  */
-function compare_drip_signup_dates( $post_id = 0 ) {
+function compare_drip_signup_dates( $post_id = 0, $display = 'content' ) {
 
 	// Bail if we dont have a post ID or a drip.
 	if ( empty( $post_id ) ) {
@@ -220,7 +221,7 @@ function compare_drip_signup_dates( $post_id = 0 ) {
 			'access'     => $access_stamp,
 			'content_id' => $post_id,
 			'remaining'  => absint( $access_stamp ) - absint( $today_stamp ),
-			'message'    => Helpers\get_pending_message( $access_stamp, $message_args ),
+			'message'    => Helpers\get_pending_message( $access_stamp, $display, $message_args ),
 		);
 	}
 

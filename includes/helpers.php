@@ -284,25 +284,43 @@ function get_single_drip_label( $range = '', $format = 'plural' ) {
  * The display message for when something is pending.
  *
  * @param  integer $timestamp     The timestamp of the drip.
+ * @param  string  $display       Where the message is being displayed.
  * @param  array   $message_args  Optional args we can pass.
  *
  * @return string
  */
-function get_pending_message( $timestamp = 0, $message_args = array() ) {
+function get_pending_message( $timestamp = 0, $display = 'content', $message_args = array() ) {
 
 	// Bail without a drip date.
 	if ( empty( $timestamp ) ) {
 		return;
 	}
 
-	// Get our date all formatted.
-	$formatted_date = date( Utilities\get_date_format(), $timestamp );
+	// Set an empty.
+	$display_text   = '';
 
-	// set a default
-	$display_text   = sprintf( __( 'This content will be available to you on %s', 'drip-press' ), esc_attr( $formatted_date ) );
+	// Handle the content type first.
+	if ( 'content' === sanitize_text_field( $display ) ) {
+
+		// Get our date all formatted.
+		$formatted_date = date( Utilities\get_date_format(), $timestamp );
+
+		// Set the text.
+		$display_text   = sprintf( __( 'This content will be available to you on %s', 'drip-press' ), esc_attr( $formatted_date ) );
+	}
+
+	// Handle the list type second.
+	if ( 'list' === sanitize_text_field( $display ) ) {
+
+		// Get our date all formatted.
+		$formatted_date = date( 'n/d', $timestamp );
+
+		// Set the text.
+		$display_text   = sprintf( __( 'Will become available on %s', 'drip-press' ), esc_attr( $formatted_date ) );
+	}
 
 	// Send it back filtered.
-	return apply_filters( Core\HOOK_PREFIX . 'pending_message', $display_text, $timestamp, $message_args );
+	return apply_filters( Core\HOOK_PREFIX . 'pending_message', $display_text, $timestamp, $display, $message_args );
 }
 
 /**
